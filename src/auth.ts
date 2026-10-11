@@ -39,7 +39,7 @@ export function hasPin(): boolean {
 }
 
 export async function savePin(pin: string): Promise<void> {
-  if (!/^\\d{4,6}$/.test(pin)) throw new Error("رمز باید ۴ تا ۶ رقم باشد.");
+  if (!/^\d{4,6}$/.test(pin)) throw new Error("رمز باید ۴ تا ۶ رقم باشد.");
   if (!cryptoAvailable()) throw new Error("امکان امن‌سازی رمز در این دستگاه فراهم نیست؛ برنامه را به‌روز یا دوباره باز کنید.");
   const salt = crypto.getRandomValues(new Uint8Array(SALT_BYTES));
   const hash = await derivePinHash(pin, salt);
@@ -134,7 +134,7 @@ export function authScreen(onSuccess: () => void): void {
     if (button.disabled) return;
     const pin = input.value.trim();
 
-    if (!/^\\d{4,6}$/.test(pin)) {
+    if (!/^\d{4,6}$/.test(pin)) {
       error.textContent = "رمز باید ۴ تا ۶ رقم باشد.";
       return;
     }
