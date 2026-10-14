@@ -2,9 +2,9 @@ name: Sayar CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/email-auth-integration, feature/monthly-subscription-foundation]
   pull_request:
-    branches: [main]
+    branches: [main, feature/monthly-subscription-foundation]
 
 permissions:
   contents: read
