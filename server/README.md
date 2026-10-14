@@ -7,7 +7,8 @@ only on client input.
 
 ## Current endpoints
 
-- `GET /health`: process health check.
+- `GET /health`: process health check (does not prove the database is ready).
+- `GET /ready`: reports whether PostgreSQL is configured and reachable; returns HTTP 503 otherwise.
 - `GET /subscription/status`: currently fails closed with HTTP 503.
 - `POST /subscription/checkout`: currently fails closed with HTTP 503.
 - `POST /subscription/store/verify`: validates request shape, then fails closed with HTTP 503.
@@ -21,13 +22,13 @@ npm install
 npm run dev
 ```
 
-Set `PORT` and `ALLOWED_ORIGINS` as environment variables if needed.
+Copy `.env.example` to `.env` for local development, then set `PORT`, `DATABASE_URL`, and `ALLOWED_ORIGINS`. Never commit a real `.env` file or secrets.
 `ALLOWED_ORIGINS` is a comma-separated list of exact web origins. Native requests
 without an Origin header are allowed by CORS, but CORS is not authentication.
 
 ## Before production
 
-1. Choose and configure a persistent PostgreSQL database; apply `db/schema.sql`
+1. Choose and configure a persistent PostgreSQL database; check `/ready` after configuration and apply `db/schema.sql`
    using a migration process. Do not use an ephemeral local file as production storage.
 2. Implement real user authentication and bind each subscription to a server-verified
    account. The app's current local PIN is not server authentication.
