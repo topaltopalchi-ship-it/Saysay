@@ -2,10 +2,10 @@
 /**
  * Supabase email authentication helpers for Say Say.
  *
- * This module is intentionally not wired into the current app entrypoint yet.
- * First install @supabase/supabase-js, set VITE_SUPABASE_URL and
- * VITE_SUPABASE_ANON_KEY, then integrate this flow while preserving the
- * existing local PIN as an optional app lock and leaving IndexedDB untouched.
+ * Used by the startup email/password gate and subscription requests.
+ * Configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in the build environment.
+ * Existing local PIN values are left untouched, and IndexedDB accounting data is
+ * never cleared by authentication operations.
  */
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
