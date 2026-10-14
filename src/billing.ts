@@ -1,3 +1,5 @@
+import { getEmailSession } from "./supabase-email-auth";
+
 export type SubscriptionStatus = "active" | "expired" | "pending" | "none";
 export type BillingProvider = "web" | "bazaar" | "myket";
 
@@ -23,6 +25,18 @@ const TRIAL_DAYS = 30;
 const TRIAL_MS = TRIAL_DAYS * 24 * 60 * 60 * 1000;
 const TRIAL_STARTED_KEY = "sai-sai-trial-started-at-v3";
 
+async function authenticatedHeaders(json = false): Promise<Record<string, string>> {
+  const session = await getEmailSession();
+  if (!session?.access_token) {
+    throw new Error("برای بررسی اشتراک ابتدا با ایمیل وارد شوید.");
+  }
+  return {
+    Accept: "application/json",
+    ...(json ? { "Content-Type": "application/json" } : {}),
+    Authorization: `Bearer ${session.access_token}`,
+  };
+}
+
 function getTrialStartedAt(): number {
   const stored = Number(localStorage.getItem(TRIAL_STARTED_KEY));
   if (Number.isFinite(stored) && stored > 0) return stored;
@@ -41,13 +55,12 @@ function getLocalTrialSubscription(): Subscription {
 
 export async function getSubscription(): Promise<Subscription> {
   if (BILLING_DISABLED) return getLocalTrialSubscription();
-  // Without a configured billing server, every fresh installation gets a 30-day local trial.
-  // Once the trial ends, the normal subscription paywall is shown.
-  if (!API_BASE) return getLocalTrialSubscription();
+  // Never grant a production entitlement from a client-side clock. A trusted server
+  // must verify the signed-in user's subscription before access is granted.
+  if (!API_BASE) return { status: "none", plan: "none", expiresAt: null };
 
   const response = await fetch(`${API_BASE}/subscription/status`, {
-    credentials: "include",
-    headers: { Accept: "application/json" },
+    headers: await authenticatedHeaders(),
   });
   if (!response.ok) throw new Error("وضعیت اشتراک دریافت نشد");
   return response.json() as Promise<Subscription>;
@@ -62,8 +75,7 @@ export async function createMonthlyCheckout(): Promise<string> {
 
   const response = await fetch(`${API_BASE}/subscription/checkout`, {
     method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    headers: await authenticatedHeaders(true),
     body: JSON.stringify({ plan: "monthly", provider: "web" }),
   });
 
@@ -84,8 +96,7 @@ export async function verifyStorePurchase(purchase: StorePurchase): Promise<Subs
 
   const response = await fetch(`${API_BASE}/subscription/store/verify`, {
     method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    headers: await authenticatedHeaders(true),
     body: JSON.stringify(purchase),
   });
 
