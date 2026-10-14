@@ -13,7 +13,7 @@ import * as XLSX from "xlsx";
 import html2canvas from "html2canvas";
 import {
   addParty, addProduct, updateProduct, deleteProduct, addSale, addSettlement, addExpense, addStockAdjustment, getDashboard, getStock, updateTransaction, deleteTransaction, updateExpense, deleteExpense,
-  listParties, updateParty, deleteParty, listProducts, listTransactions, listExpenses, listMovements, listOrders, listChecks, calculateHistoricalCOGS, repairDataIntegrity, getPartyBalances
+  listParties, updateParty, deleteParty, listProducts, listTransactions, listExpenses, listMovements, listOrders, listChecks, calculateHistoricalCOGS, repairDataIntegrity, getPartyBalances, setDataScope
 } from "./db";
 import { createMonthlyCheckout, getSubscription, type Subscription } from "./billing";
 import { lineTotal, type Order, type Party, type Product, type Transaction, type TransactionLine } from "./domain";
@@ -1914,20 +1914,23 @@ if ("serviceWorker" in navigator) {
 void (async () => {
   try {
     await setupNativeExitConfirmation();
-    // Repair legacy/missing sale-purchase stock movements before the first render.
-    await repairDataIntegrity();
   } catch (error) {
-    console.error("Sayar startup repair/setup failed", error);
+    console.error("Sayar native startup setup failed", error);
   }
-  
-try {
-  const session = await getEmailSession();
-  if (session?.user) {
-    await render();
-  } else {
+
+  try {
+    const session = await getEmailSession();
+    if (session?.user) {
+      await setDataScope(session.user.id);
+      // Repair stock movements only after selecting the current user's database.
+      await repairDataIntegrity();
+      await render();
+    } else {
+      await setDataScope(null);
+      authScreen(() => { void render(); });
+    }
+  } catch (error) {
+    console.error("Sayar account startup failed", error);
     authScreen(() => { void render(); });
   }
-} catch {
-  authScreen(() => { void render(); });
-}
 })();
