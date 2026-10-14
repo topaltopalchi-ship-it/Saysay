@@ -2,6 +2,7 @@ import "./style.css";
 import "./ui-entrypoints";
 import { scanBarcode } from "./barcode-scanner";
 import { authScreen } from "./auth";
+import { getEmailSession, signInWithEmail, signUpWithEmail, sendPasswordReset, signOutEmailAccount } from "./supabase-email-auth";
 import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import { Filesystem, Directory } from "@capacitor/filesystem";
@@ -62,10 +63,70 @@ let activeTab: Tab = "dashboard";
 const UI_MODE_KEY = "sai-sai-ui-mode";
 function isProfessionalMode(): boolean { return localStorage.getItem(UI_MODE_KEY) === "professional"; }
 function setProfessionalMode(value: boolean): void { localStorage.setItem(UI_MODE_KEY, value ? "professional" : "simple"); }
+
+function emailAccountModal(): string {
+  return `<div class="modal-backdrop" id="email-account-modal"><section class="modal">
+    <button class="modal-close" id="email-account-close">×</button>
+    <span class="eyebrow">حساب آنلاین سای‌سای</span><h2>ورود با ایمیل</h2>
+    <p class="muted">این حساب برای شناسایی آنلاین شماست. اطلاعات حسابداری فعلی همچنان روی همین دستگاه می‌ماند و با ورود ایمیل پاک نمی‌شود.</p>
+    <label class="field"><span>ایمیل</span><input id="email-account-email" type="email" autocomplete="email" placeholder="name@example.com"></label>
+    <label class="field"><span>رمز عبور (حداقل ۸ کاراکتر)</span><input id="email-account-password" type="password" autocomplete="current-password" minlength="8" placeholder="رمز عبور"></label>
+    <p id="email-account-status" class="muted" role="status"></p>
+    <button class="primary-button wide" id="email-account-signin">ورود</button>
+    <button class="secondary-button wide" id="email-account-signup">ساخت حساب جدید</button>
+    <button class="secondary-button wide" id="email-account-reset">فراموشی رمز عبور</button>
+    <button class="secondary-button wide" id="email-account-signout" hidden>خروج از حساب ایمیل</button>
+  </section></div>`;
+}
+function bindEmailAccountModal(): void {
+  const modal = document.querySelector<HTMLElement>("#email-account-modal");
+  if (!modal) return;
+  const emailInput = modal.querySelector<HTMLInputElement>("#email-account-email")!;
+  const passwordInput = modal.querySelector<HTMLInputElement>("#email-account-password")!;
+  const status = modal.querySelector<HTMLElement>("#email-account-status")!;
+  const signout = modal.querySelector<HTMLButtonElement>("#email-account-signout")!;
+  const setStatus = (message: string) => { status.textContent = message; };
+  modal.querySelector("#email-account-close")?.addEventListener("click", () => modal.remove());
+  const run = async (action: () => Promise<unknown>, success: string) => {
+    const email = emailInput.value.trim();
+    if (!email) { setStatus("ایمیل را وارد کنید."); emailInput.focus(); return; }
+    try {
+      setStatus("لطفاً صبر کنید…");
+      await action();
+      setStatus(success);
+      await refreshSession();
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "عملیات انجام نشد. اتصال اینترنت و تنظیمات را بررسی کنید.");
+    }
+  };
+  const refreshSession = async () => {
+    try {
+      const session = await getEmailSession();
+      signout.hidden = !session;
+      if (session?.user?.email) setStatus("وارد شده‌اید: " + session.user.email);
+    } catch {
+      setStatus("اتصال حساب آنلاین تنظیم نشده است. تنظیمات پروژه را بررسی کنید.");
+    }
+  };
+  modal.querySelector("#email-account-signin")?.addEventListener("click", () => {
+    void run(() => signInWithEmail(emailInput.value, passwordInput.value), "ورود موفق بود.");
+  });
+  modal.querySelector("#email-account-signup")?.addEventListener("click", () => {
+    void run(() => signUpWithEmail(emailInput.value, passwordInput.value), "درخواست ثبت‌نام انجام شد. اگر تأیید ایمیل فعال باشد، صندوق ورودی را بررسی کنید.");
+  });
+  modal.querySelector("#email-account-reset")?.addEventListener("click", () => {
+    void run(() => sendPasswordReset(emailInput.value), "اگر این ایمیل ثبت شده باشد، لینک بازیابی ارسال می‌شود.");
+  });
+  signout.addEventListener("click", () => {
+    void run(() => signOutEmailAccount(), "از حساب ایمیل خارج شدید.");
+  });
+  void refreshSession();
+}
+
 function settingsModal(): string {
   const unit = getCurrencyUnit();
   const professional = isProfessionalMode();
-  return `<div class="modal-backdrop" id="settings-modal"><section class="modal ui-mode-modal"><button class="modal-close" id="settings-close">×</button><span class="eyebrow">تنظیمات سای‌سای</span><h2>تنظیمات پایه</h2><label class="field"><span>واحد نمایش مبلغ</span><select id="currency-unit"><option value="toman" ${unit === "toman" ? "selected" : ""}>تومان</option><option value="rial" ${unit === "rial" ? "selected" : ""}>ریال</option></select></label><label class="professional-toggle"><input id="professional-mode" type="checkbox" ${professional ? "checked" : ""}><span><b>نسخه حرفه‌ای</b><small>گزارش‌ها و ابزارهای مدیریتی پیشرفته نمایش داده شوند.</small></span></label><button class="secondary-button wide" id="pricing-settings">🛡️ قیمت‌گذاری و حفظ سرمایه</button><button class="secondary-button wide" id="subscription-settings">مدیریت اشتراک</button><button class="primary-button wide" id="settings-save">ذخیره و اعمال</button></section></div>`;
+  return `<div class="modal-backdrop" id="settings-modal"><section class="modal ui-mode-modal"><button class="modal-close" id="settings-close">×</button><span class="eyebrow">تنظیمات سای‌سای</span><h2>تنظیمات پایه</h2><label class="field"><span>واحد نمایش مبلغ</span><select id="currency-unit"><option value="toman" ${unit === "toman" ? "selected" : ""}>تومان</option><option value="rial" ${unit === "rial" ? "selected" : ""}>ریال</option></select></label><label class="professional-toggle"><input id="professional-mode" type="checkbox" ${professional ? "checked" : ""}><span><b>نسخه حرفه‌ای</b><small>گزارش‌ها و ابزارهای مدیریتی پیشرفته نمایش داده شوند.</small></span></label><button class="secondary-button wide" id="pricing-settings">🛡️ قیمت‌گذاری و حفظ سرمایه</button><button class="secondary-button wide" id="subscription-settings">مدیریت اشتراک</button><button class="secondary-button wide" id="email-account-settings">حساب آنلاین با ایمیل</button><button class="primary-button wide" id="settings-save">ذخیره و اعمال</button></section></div>`;
 }
 function bindSettingsModal(): void {
   const modal = document.querySelector<HTMLDivElement>("#settings-modal");
@@ -84,6 +145,7 @@ authScreen(() => {
 });
 }); 
   modal.querySelector("#settings-close")?.addEventListener("click", () => modal.remove());
+  modal.querySelector("#email-account-settings")?.addEventListener("click", () => { modal.remove(); document.body.insertAdjacentHTML("beforeend", emailAccountModal()); bindEmailAccountModal(); });
   modal.querySelector("#pricing-settings")?.addEventListener("click", async () => { modal.remove(); document.body.insertAdjacentHTML("beforeend", pricingSettingsModal()); bindPricingSettingsModal(); });
   modal.querySelector("#subscription-settings")?.addEventListener("click", async () => { modal.remove(); const subscription = await getSubscription().catch(() => ({ status: "none", plan: "none", expiresAt: null } as Subscription)); showSubscription(subscription); });
   modal.querySelector("#settings-save")?.addEventListener("click", async () => {
