@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
+import { Pool } from "pg";
 import { z } from "zod";
 
 const envSchema = z.object({
@@ -15,6 +16,10 @@ if (!parsedEnv.success) {
   process.exit(1);
 }
 const env = parsedEnv.data;
+
+const db = env.DATABASE_URL
+  ? new Pool({ connectionString: env.DATABASE_URL, max: 5, connectionTimeoutMillis: 5000 })
+  : null;
 
 const app = express();
 app.disable("x-powered-by");
@@ -39,6 +44,20 @@ app.use(cors({
 
 app.get("/health", (_req, res) => {
   res.status(200).json({ ok: true, service: "sai-sai-billing-api" });
+});
+
+// Readiness reports whether persistent storage is configured and reachable.
+// It never exposes connection details or credentials.
+app.get("/ready", async (_req, res) => {
+  if (!db) {
+    return res.status(503).json({ ok: false, database: "not_configured" });
+  }
+  try {
+    await db.query("SELECT 1");
+    return res.status(200).json({ ok: true, database: "connected" });
+  } catch {
+    return res.status(503).json({ ok: false, database: "unavailable" });
+  }
 });
 
 // Billing intentionally fails closed until account authentication, persistent
