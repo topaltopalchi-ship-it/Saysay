@@ -27,7 +27,7 @@ export async function setDataScope(userId?: string | null): Promise<void> {
   const legacy = await openNamedDb(DB_NAME);
   const target = await openNamedDb(nextName);
   try {
-    const sourceRows = await Promise.all(stores.map(store => readAllFrom(legacy, store)));
+    const sourceRows = await Promise.all(stores.map(store => readAllFrom<{ id: string }>(legacy, store)));
     const sourceHasData = sourceRows.some(rows => rows.length > 0);
     if (sourceHasData) {
       // Merge only missing IDs. This also resumes safely after a partial migration.
