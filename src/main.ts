@@ -117,8 +117,15 @@ function bindEmailAccountModal(): void {
   modal.querySelector("#email-account-reset")?.addEventListener("click", () => {
     void run(() => sendPasswordReset(emailInput.value), "اگر این ایمیل ثبت شده باشد، لینک بازیابی ارسال می‌شود.");
   });
-  signout.addEventListener("click", () => {
-    void run(() => signOutEmailAccount(), "از حساب ایمیل خارج شدید.");
+  signout.addEventListener("click", async () => {
+    try {
+      setStatus("لطفاً صبر کنید…");
+      await signOutEmailAccount();
+      signout.hidden = true;
+      setStatus("از حساب ایمیل خارج شدید.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "خروج از حساب انجام نشد.");
+    }
   });
   void refreshSession();
 }
