@@ -112,7 +112,7 @@ export function authScreen(onSuccess: () => void): void {
     status.textContent = "در حال ساخت حساب…";
     try {
       const result = await signUpWithUsername(username.value, password.value);
-      wrapper.querySelector<HTMLElement>("#auth-recovery-output")!.value = result.recoveryCode;
+      wrapper.querySelector<HTMLTextAreaElement>("#auth-recovery-output")!.value = result.recoveryCode;
       recoveryResult.hidden = false;
       recoveryPanel.hidden = true;
       status.textContent = "حساب ساخته شد. کد بازیابی را حتماً ذخیره کنید.";
