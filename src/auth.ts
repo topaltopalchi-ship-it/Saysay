@@ -1,5 +1,6 @@
 import { getEmailSession, signOutEmailAccount } from "./supabase-email-auth";
 import { signInWithUsername, signUpWithUsername, resetPasswordWithRecovery } from "./username-auth";
+import { setDataScope, repairDataIntegrity } from "./db";
 
 const PIN_KEY = "sai-sai-pin";
 function hasLegacyPin(): boolean { return Boolean(localStorage.getItem(PIN_KEY)); }
@@ -91,7 +92,7 @@ export function authScreen(onSuccess: () => void): void {
     try {
       await action();
       const session = await getEmailSession();
-      if (session?.user) { wrapper.remove(); onSuccess(); }
+      if (session?.user) { await setDataScope(session.user.id); await repairDataIntegrity(); wrapper.remove(); onSuccess(); }
       else status.textContent = successMessage;
     } catch (error) {
       status.textContent = friendlyAuthError(error);
@@ -112,6 +113,8 @@ export function authScreen(onSuccess: () => void): void {
     status.textContent = "در حال ساخت حساب…";
     try {
       const result = await signUpWithUsername(username.value, password.value);
+      const session = await getEmailSession();
+      if (session?.user) await setDataScope(session.user.id);
       wrapper.querySelector<HTMLTextAreaElement>("#auth-recovery-output")!.value = result.recoveryCode;
       recoveryResult.hidden = false;
       recoveryPanel.hidden = true;
@@ -147,7 +150,7 @@ export function authScreen(onSuccess: () => void): void {
   });
   wrapper.querySelector<HTMLButtonElement>("#auth-recovery-done")!.addEventListener("click", async () => {
     const session = await getEmailSession().catch(() => null);
-    if (session?.user) { wrapper.remove(); onSuccess(); }
+    if (session?.user) { await setDataScope(session.user.id); await repairDataIntegrity(); wrapper.remove(); onSuccess(); }
     else {
       recoveryResult.hidden = true; signIn.hidden = signUp.hidden = resetMode.hidden = false;
       status.textContent = "کد را ذخیره کنید و با نام کاربری و رمز وارد شوید.";
@@ -156,15 +159,16 @@ export function authScreen(onSuccess: () => void): void {
 
   const pinInput = wrapper.querySelector<HTMLInputElement>("#auth-pin");
   const pinError = wrapper.querySelector<HTMLElement>("#auth-pin-error");
-  const submitPin = () => {
+  const submitPin = async () => {
     if (!pinInput || !pinError) return;
     const pin = pinInput.value.trim();
     if (!/^\d{4,6}$/.test(pin)) { pinError.textContent = "رمز باید ۴ تا ۶ رقم باشد."; return; }
     if (!checkLegacyPin(pin)) { pinError.textContent = "رمز واردشده اشتباه است."; pinInput.value = ""; pinInput.focus(); return; }
-    wrapper.remove(); onSuccess();
+    try { await setDataScope(null); await repairDataIntegrity(); wrapper.remove(); onSuccess(); }
+    catch { pinError.textContent = "باز کردن اطلاعات محلی ناموفق بود؛ دوباره تلاش کنید."; }
   };
-  wrapper.querySelector<HTMLButtonElement>("#auth-pin-submit")?.addEventListener("click", submitPin);
-  pinInput?.addEventListener("keydown", event => { if (event.key === "Enter") submitPin(); });
+  wrapper.querySelector<HTMLButtonElement>("#auth-pin-submit")?.addEventListener("click", () => { void submitPin(); });
+  pinInput?.addEventListener("keydown", event => { if (event.key === "Enter") void submitPin(); });
   password.addEventListener("keydown", event => { if (event.key === "Enter") signIn.click(); });
   username.focus();
 }
