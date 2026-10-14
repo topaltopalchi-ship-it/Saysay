@@ -123,6 +123,7 @@ function bindEmailAccountModal(): void {
       await signOutEmailAccount();
       signout.hidden = true;
       setStatus("از حساب ایمیل خارج شدید.");
+      window.location.reload();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "خروج از حساب انجام نشد.");
     }
@@ -143,13 +144,14 @@ modal.insertAdjacentHTML(
   `<button class="secondary-button wide" id="auth-logout">خروج از حساب</button>`
 );
 
-modal.querySelector("#auth-logout")?.addEventListener("click", () => {
-  localStorage.removeItem("sai-sai-unlocked");
-  modal.remove();
-authScreen(() => {
-  localStorage.setItem("sai-sai-unlocked", "1");
-  void render();
-});
+modal.querySelector("#auth-logout")?.addEventListener("click", async () => {
+  try {
+    await signOutEmailAccount();
+    modal.remove();
+    window.location.reload();
+  } catch {
+    showToast("خروج از حساب انجام نشد؛ اتصال اینترنت را بررسی کنید.");
+  }
 }); 
   modal.querySelector("#settings-close")?.addEventListener("click", () => modal.remove());
   modal.querySelector("#email-account-settings")?.addEventListener("click", () => { modal.remove(); document.body.insertAdjacentHTML("beforeend", emailAccountModal()); bindEmailAccountModal(); });
@@ -1946,12 +1948,14 @@ void (async () => {
     console.error("Sayar startup repair/setup failed", error);
   }
   
-if (localStorage.getItem("sai-sai-unlocked") === "1") {
-  await render();
-} else {
-  authScreen(() => {
-    localStorage.setItem("sai-sai-unlocked", "1");
-    void render();
-  });
+try {
+  const session = await getEmailSession();
+  if (session?.user) {
+    await render();
+  } else {
+    authScreen(() => { void render(); });
+  }
+} catch {
+  authScreen(() => { void render(); });
 }
 })();
