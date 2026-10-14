@@ -722,3 +722,10 @@ body{background:radial-gradient(circle at 12% 0,#223657 0,#10182a 34%,#090e1b 78
   background: #17263b !important;
   border: 1px solid #475569 !important;
 }
+
+
+/* Keep the startup auth dialog above every app layer and tappable in Android WebView. */
+#auth-lock.modal-backdrop { z-index: 10000; pointer-events: auto; }
+#auth-lock .modal, #auth-lock button, #auth-lock input { pointer-events: auto; }
+#auth-lock button { touch-action: manipulation; }
+#auth-lock button:disabled { opacity: .65; cursor: wait; }
