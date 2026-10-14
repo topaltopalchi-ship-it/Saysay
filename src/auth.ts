@@ -40,9 +40,9 @@ export function authScreen(onSuccess: () => void): void {
         <label class="field"><span>ایمیل</span><input id="auth-email" type="email" autocomplete="email" placeholder="name@example.com" required></label>
         <label class="field"><span>رمز عبور</span><input id="auth-password" type="password" autocomplete="current-password" minlength="8" placeholder="حداقل ۸ کاراکتر" required></label>
         <p id="auth-error" class="muted" role="status" aria-live="polite"></p>
-        <button id="auth-submit" class="primary-button wide">ورود</button>
-        <button id="auth-signup" class="secondary-button wide">ساخت حساب جدید</button>
-        <button id="auth-reset" class="secondary-button wide">فراموشی رمز عبور</button>
+        <button id="auth-submit" type="button" class="primary-button wide">ورود</button>
+        <button id="auth-signup" type="button" class="secondary-button wide">ساخت حساب جدید</button>
+        <button id="auth-reset" type="button" class="secondary-button wide">فراموشی رمز عبور</button>
       </div>
       ${legacyPin ? `<div id="auth-pin-panel" hidden>
         <label class="field"><span>رمز ورود قبلی</span><input id="auth-pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="رمز ۴ تا ۶ رقمی"></label>
@@ -109,6 +109,8 @@ export function authScreen(onSuccess: () => void): void {
     void run(() => signInWithEmail(email.value, password.value), "ورود موفق بود.");
   });
   signUp.addEventListener("click", () => {
+    // Give immediate feedback even before validation/network requests on Android WebView.
+    status.textContent = "در حال آماده‌سازی ثبت‌نام…";
     if (password.value.length < 8) { status.textContent = "رمز عبور باید حداقل ۸ کاراکتر باشد."; password.focus(); return; }
     void run(() => signUpWithEmail(email.value, password.value), "حساب ایجاد شد؛ وارد برنامه شدید.");
   });
