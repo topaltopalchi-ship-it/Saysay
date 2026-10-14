@@ -5,6 +5,10 @@ import {
   signUpWithEmail,
 } from "./supabase-email-auth";
 
+const PIN_KEY = "sai-sai-pin";
+function hasLegacyPin(): boolean { return Boolean(localStorage.getItem(PIN_KEY)); }
+function checkLegacyPin(pin: string): boolean { return localStorage.getItem(PIN_KEY) === pin; }
+
 function friendlyAuthError(error: unknown): string {
   const message = error instanceof Error ? error.message.toLowerCase() : "";
   if (message.includes("invalid login credentials")) return "ایمیل یا رمز عبور درست نیست.";
@@ -22,19 +26,45 @@ export function authScreen(onSuccess: () => void): void {
   const wrapper = document.createElement("div");
   wrapper.id = "auth-lock";
   wrapper.className = "modal-backdrop";
+  const legacyPin = hasLegacyPin();
   wrapper.innerHTML = `
     <section class="modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
-      <span class="eyebrow">حساب آنلاین سای‌سای</span>
+      <span class="eyebrow">حساب سای‌سای</span>
       <h2 id="auth-title">ورود به سای‌سای</h2>
-      <p class="muted">با ایمیل و رمز عبور وارد شوید یا حساب جدید بسازید. اطلاعات حسابداری این دستگاه پاک نمی‌شود.</p>
-      <label class="field"><span>ایمیل</span><input id="auth-email" type="email" autocomplete="email" placeholder="name@example.com" required></label>
-      <label class="field"><span>رمز عبور</span><input id="auth-password" type="password" autocomplete="current-password" minlength="8" placeholder="حداقل ۸ کاراکتر" required></label>
-      <p id="auth-error" class="muted" role="status" aria-live="polite"></p>
-      <button id="auth-submit" class="primary-button wide">ورود</button>
-      <button id="auth-signup" class="secondary-button wide">ساخت حساب جدید</button>
-      <button id="auth-reset" class="secondary-button wide">فراموشی رمز عبور</button>
+      <p class="muted">می‌توانید با حساب ایمیل وارد شوید. اگر قبلاً با رمز ۴ تا ۶ رقمی از برنامه استفاده می‌کردید، ورود قبلی شما هم در دسترس است. اطلاعات حسابداری این دستگاه پاک نمی‌شود.</p>
+      <div class="auth-methods">
+        <button id="auth-email-mode" class="primary-button wide">ورود با ایمیل</button>
+        ${legacyPin ? '<button id="auth-pin-mode" class="secondary-button wide">ورود با رمز قبلی</button>' : ""}
+      </div>
+      <div id="auth-email-panel">
+        <label class="field"><span>ایمیل</span><input id="auth-email" type="email" autocomplete="email" placeholder="name@example.com" required></label>
+        <label class="field"><span>رمز عبور</span><input id="auth-password" type="password" autocomplete="current-password" minlength="8" placeholder="حداقل ۸ کاراکتر" required></label>
+        <p id="auth-error" class="muted" role="status" aria-live="polite"></p>
+        <button id="auth-submit" class="primary-button wide">ورود</button>
+        <button id="auth-signup" class="secondary-button wide">ساخت حساب جدید</button>
+        <button id="auth-reset" class="secondary-button wide">فراموشی رمز عبور</button>
+      </div>
+      ${legacyPin ? `<div id="auth-pin-panel" hidden>
+        <label class="field"><span>رمز ورود قبلی</span><input id="auth-pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="رمز ۴ تا ۶ رقمی"></label>
+        <p id="auth-pin-error" class="muted" role="alert"></p>
+        <button id="auth-pin-submit" class="primary-button wide">ورود با رمز قبلی</button>
+      </div>` : ""}
     </section>`;
   document.body.appendChild(wrapper);
+
+  const emailPanel = wrapper.querySelector<HTMLElement>("#auth-email-panel")!;
+  const pinPanel = wrapper.querySelector<HTMLElement>("#auth-pin-panel");
+  const emailMode = wrapper.querySelector<HTMLButtonElement>("#auth-email-mode")!;
+  const pinMode = wrapper.querySelector<HTMLButtonElement>("#auth-pin-mode");
+  const showMode = (mode: "email" | "pin") => {
+    emailPanel.hidden = mode !== "email";
+    if (pinPanel) pinPanel.hidden = mode !== "pin";
+    emailMode.className = mode === "email" ? "primary-button wide" : "secondary-button wide";
+    if (pinMode) pinMode.className = mode === "pin" ? "primary-button wide" : "secondary-button wide";
+    (mode === "email" ? wrapper.querySelector<HTMLInputElement>("#auth-email") : wrapper.querySelector<HTMLInputElement>("#auth-pin"))?.focus();
+  };
+  emailMode.addEventListener("click", () => showMode("email"));
+  pinMode?.addEventListener("click", () => showMode("pin"));
 
   const email = wrapper.querySelector<HTMLInputElement>("#auth-email")!;
   const password = wrapper.querySelector<HTMLInputElement>("#auth-password")!;
@@ -75,7 +105,7 @@ export function authScreen(onSuccess: () => void): void {
   };
 
   signIn.addEventListener("click", () => {
-    if (password.value.length < 1) { status.textContent = "رمز عبور را وارد کنید."; password.focus(); return; }
+    if (!password.value) { status.textContent = "رمز عبور را وارد کنید."; password.focus(); return; }
     void run(() => signInWithEmail(email.value, password.value), "ورود موفق بود.");
   });
   signUp.addEventListener("click", () => {
@@ -85,8 +115,19 @@ export function authScreen(onSuccess: () => void): void {
   reset.addEventListener("click", () => {
     void run(() => sendPasswordReset(email.value), "اگر این ایمیل ثبت شده باشد، لینک بازیابی رمز ارسال می‌شود.", true);
   });
-  password.addEventListener("keydown", event => {
-    if (event.key === "Enter") signIn.click();
-  });
+
+  const pinInput = wrapper.querySelector<HTMLInputElement>("#auth-pin");
+  const pinError = wrapper.querySelector<HTMLElement>("#auth-pin-error");
+  const submitPin = () => {
+    if (!pinInput || !pinError) return;
+    const pin = pinInput.value.trim();
+    if (!/^\d{4,6}$/.test(pin)) { pinError.textContent = "رمز باید ۴ تا ۶ رقم باشد."; return; }
+    if (!checkLegacyPin(pin)) { pinError.textContent = "رمز واردشده اشتباه است."; pinInput.value = ""; pinInput.focus(); return; }
+    wrapper.remove();
+    onSuccess();
+  };
+  wrapper.querySelector<HTMLButtonElement>("#auth-pin-submit")?.addEventListener("click", submitPin);
+  pinInput?.addEventListener("keydown", event => { if (event.key === "Enter") submitPin(); });
+  password.addEventListener("keydown", event => { if (event.key === "Enter") signIn.click(); });
   email.focus();
 }
