@@ -139,7 +139,9 @@ export function authScreen(onSuccess: () => void): void {
       wrapper.querySelector<HTMLInputElement>("#auth-recovery-output")!.value = result.recoveryCode;
       recoveryResult.hidden = false; recoveryPanel.hidden = true;
       signIn.hidden = true; signUp.hidden = true; resetMode.hidden = true;
-      status.textContent = "رمز تغییر کرد؛ کد بازیابی جدید را ذخیره کنید.";
+      status.textContent = result.passwordChanged
+        ? "رمز تغییر کرد؛ کد بازیابی جدید را ذخیره کنید."
+        : "رمز تغییر نکرد، اما کد بازیابی جدید فعال شده است. آن را ذخیره کنید و سپس دوباره بازیابی را انجام دهید.";
     } catch (error) { status.textContent = friendlyAuthError(error); }
     finally { busy = false; }
   });
