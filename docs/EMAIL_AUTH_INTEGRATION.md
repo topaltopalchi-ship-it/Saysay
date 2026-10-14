@@ -3,12 +3,12 @@
 ## Implemented in this branch
 
 - Supabase email/password sign-in and account creation are wired into the startup gate.
-- Password reset requests are available from the login screen.
+- Password-reset requests are available from the login screen.
 - Email confirmation is supported: if signup returns no session, the app asks the user to confirm their email before signing in.
-- The existing local PIN screen is no longer the startup identity gate on this branch.
-- Signing out ends the Supabase session and reloads the app, returning to the email login screen.
+- Legacy PIN login is preserved when the device already has the `sai-sai-pin` value. This is a compatibility path for existing installs, not account-based authentication.
+- Signing out ends the Supabase session and reloads the app, returning to the authentication screen.
 - Subscription requests include the signed-in user's Supabase access token as a Bearer token.
-- When the billing API URL is not configured, the app does not grant a client-side 30-day entitlement by default.
+- If the billing API URL is not configured, a temporary device-local 30-day trial is granted so the announced free period remains available. This trial is not secure or tamper-resistant: clearing app data can restart it, and it is not tracked per account.
 - Local IndexedDB accounting data is not deleted on sign-in or sign-out.
 
 ## Required configuration
@@ -41,6 +41,8 @@ The app's accounting data is currently stored locally in IndexedDB. Logging in w
 
 - Set real Supabase project configuration and test signup, confirmed-email sign-in, invalid password, reset link, logout, session restoration, and offline errors.
 - Test existing local accounting records before and after sign-in/out on web and Android.
+- Test that the legacy PIN remains available for existing installs and is not falsely presented as email authentication.
+- Replace the device-local trial with a server-side, account-scoped entitlement before enforcing paid subscriptions.
 - Deploy and test the authenticated subscription backend.
 - Test Cafe Bazaar purchase, restore, duplicate verification, cancellation/refund, and expiry on Android.
-- Confirm the GitHub Actions build check passes before merging.
+- Confirm both the web build and Android debug APK build pass before merging or releasing.
