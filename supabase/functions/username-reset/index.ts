@@ -35,12 +35,30 @@ Deno.serve(async (req) => {
     if (lookupError) return reply(500, { error: "بررسی حساب انجام نشد؛ دوباره تلاش کنید." });
     if (!record || record.recovery_hash !== await sha256(recoveryCode)) return reply(400, { error: "نام کاربری یا کد بازیابی درست نیست." });
 
+    // Atomically claim this recovery code before changing the password. Only one
+    // concurrent request can replace the old hash, preventing password/code mismatch.
+    const oldHash = record.recovery_hash;
+    const newHash = await sha256(newRecoveryCode);
+    const { data: claimed, error: claimError } = await admin.from("username_recovery")
+      .update({ recovery_hash: newHash, updated_at: new Date().toISOString() })
+      .eq("user_id", record.user_id).eq("recovery_hash", oldHash)
+      .select("user_id").maybeSingle();
+    if (claimError) return reply(500, { error: "کد بازیابی رزرو نشد؛ دوباره تلاش کنید." });
+    if (!claimed) return reply(400, { error: "این کد بازیابی قبلاً استفاده شده است؛ دوباره تلاش کنید." });
+
     const { error: updateError } = await admin.auth.admin.updateUserById(record.user_id, { password: newPassword });
-    if (updateError) return reply(400, { error: "تغییر رمز انجام نشد؛ دوباره تلاش کنید." });
-    const { error: rotateError } = await admin.from("username_recovery").update({
-      recovery_hash: await sha256(newRecoveryCode), updated_at: new Date().toISOString(),
-    }).eq("user_id", record.user_id).eq("recovery_hash", record.recovery_hash);
-    if (rotateError) return reply(500, { error: "رمز تغییر کرد اما به‌روزرسانی کد بازیابی کامل نشد؛ با پشتیبانی تماس بگیرید." });
+    if (updateError) {
+      // Best-effort rollback so a transient Auth error does not consume the old code.
+      const { error: rollbackError } = await admin.from("username_recovery")
+        .update({ recovery_hash: oldHash, updated_at: new Date().toISOString() })
+        .eq("user_id", record.user_id).eq("recovery_hash", newHash);
+      if (rollbackError) {
+        // The new code is still the active recovery credential; return it so the
+        // user is not stranded if the rollback could not be completed.
+        return reply(500, { error: "تغییر رمز انجام نشد. کد بازیابی جدید را ذخیره کنید و دوباره تلاش کنید.", recoveryCode: newRecoveryCode, recoveryCodeRotated: true });
+      }
+      return reply(400, { error: "تغییر رمز انجام نشد؛ دوباره تلاش کنید." });
+    }
     return reply(200, { ok: true });
   } catch {
     return reply(400, { error: "درخواست بازیابی معتبر نیست." });
