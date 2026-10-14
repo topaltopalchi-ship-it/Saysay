@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 /**
  * Supabase email authentication helpers for Say Say.
  *
