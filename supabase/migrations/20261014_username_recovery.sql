@@ -2,6 +2,7 @@
 -- Apply this migration before deploying the username-auth Edge Functions.
 create table if not exists public.username_recovery (
   user_id uuid primary key references auth.users(id) on delete cascade,
+  username text not null unique check (username ~ '^[a-z0-9_]{3,24}$'),
   recovery_hash text not null,
   updated_at timestamptz not null default now()
 );
