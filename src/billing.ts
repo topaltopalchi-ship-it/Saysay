@@ -55,9 +55,10 @@ function getLocalTrialSubscription(): Subscription {
 
 export async function getSubscription(): Promise<Subscription> {
   if (BILLING_DISABLED) return getLocalTrialSubscription();
-  // Never grant a production entitlement from a client-side clock. A trusted server
-  // must verify the signed-in user's subscription before access is granted.
-  if (!API_BASE) return { status: "none", plan: "none", expiresAt: null };
+  // Temporary launch bridge: while no billing backend is configured, allow the
+  // announced one-month free period. This is device-local and NOT tamper-resistant;
+  // configure VITE_BILLING_API_URL before enforcing paid subscriptions in production.
+  if (!API_BASE) return getLocalTrialSubscription();
 
   const response = await fetch(`${API_BASE}/subscription/status`, {
     headers: await authenticatedHeaders(),
