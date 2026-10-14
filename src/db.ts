@@ -28,12 +28,11 @@ export async function setDataScope(userId?: string | null): Promise<void> {
   const target = await openNamedDb(nextName);
   try {
     const sourceRows = await Promise.all(stores.map(store => readAllFrom(legacy, store)));
-    const targetRows = await Promise.all(stores.map(store => readAllFrom(target, store)));
     const sourceHasData = sourceRows.some(rows => rows.length > 0);
-    const targetHasData = targetRows.some(rows => rows.length > 0);
-    if (sourceHasData && !targetHasData) {
+    if (sourceHasData) {
+      // Merge only missing IDs. This also resumes safely after a partial migration.
       for (let i = 0; i < stores.length; i++) {
-        if (sourceRows[i].length) await writeAllTo(target, stores[i], sourceRows[i]);
+        if (sourceRows[i].length) await writeMissingTo(target, stores[i], sourceRows[i]);
       }
     }
     localStorage.setItem(MIGRATION_KEY, scope);
@@ -66,10 +65,16 @@ function readAllFrom<T>(db: IDBDatabase, store: StoreName): Promise<T[]> {
   });
 }
 
-function writeAllTo<T extends { id: string }>(db: IDBDatabase, store: StoreName, rows: T[]): Promise<void> {
+function writeMissingTo<T extends { id: string }>(db: IDBDatabase, store: StoreName, rows: T[]): Promise<void> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(store, "readwrite");
-    for (const row of rows) tx.objectStore(store).put(row);
+    const objectStore = tx.objectStore(store);
+    for (const row of rows) {
+      const request = objectStore.get(row.id);
+      request.onsuccess = () => {
+        if (request.result === undefined) objectStore.put(row);
+      };
+    }
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error ?? new Error("انتقال اطلاعات قبلی ناموفق بود"));
     tx.onabort = () => reject(tx.error ?? new Error("انتقال اطلاعات قبلی ناموفق بود"));
