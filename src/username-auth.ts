@@ -64,6 +64,24 @@ export async function resetPasswordWithRecovery(
       newRecoveryCode,
     },
   });
-  if (error) throw new Error("بازیابی انجام نشد. نام کاربری و کد بازیابی را بررسی کنید.");
-  return { recoveryCode: newRecoveryCode };
+  if (error) {
+    // A failed password update can exceptionally leave the new recovery hash active
+    // if the server could not roll back. Preserve and show that credential to the user.
+    const context = (error as { context?: unknown }).context;
+    if (context instanceof Response) {
+      try {
+        const payload = await context.clone().json() as { recoveryCode?: unknown; recoveryCodeRotated?: unknown };
+        if (payload.recoveryCodeRotated === true && typeof payload.recoveryCode === "string") {
+          return {
+            recoveryCode: payload.recoveryCode,
+            passwordChanged: false,
+          };
+        }
+      } catch {
+        // Fall through to the normal, non-sensitive error message.
+      }
+    }
+    throw new Error("بازیابی انجام نشد. نام کاربری و کد بازیابی را بررسی کنید.");
+  }
+  return { recoveryCode: newRecoveryCode, passwordChanged: true };
 }
