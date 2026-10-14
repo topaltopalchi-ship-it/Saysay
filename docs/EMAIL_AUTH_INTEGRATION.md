@@ -1,34 +1,46 @@
-# Email sign-in integration plan for Say Say
+# Email authentication integration for Say Say
 
-## Current state
+## Implemented in this branch
 
-- The existing `src/auth.ts` is a local PIN lock stored in `localStorage`; it is not an online user account.
-- Supabase Email provider is enabled in the project's dashboard (as confirmed by the project owner).
-- The app uses IndexedDB for accounting records. Authentication changes must not clear, overwrite, or silently reassign those records.
-- The monthly subscription SQL migration in this branch references `auth.users`, so it must not be applied to production until the app's real Supabase authentication has been implemented and tested.
+- Supabase email/password sign-in and account creation are wired into the startup gate.
+- Password reset requests are available from the login screen.
+- Email confirmation is supported: if signup returns no session, the app asks the user to confirm their email before signing in.
+- The existing local PIN screen is no longer the startup identity gate on this branch.
+- Signing out ends the Supabase session and reloads the app, returning to the email login screen.
+- Subscription requests include the signed-in user's Supabase access token as a Bearer token.
+- When the billing API URL is not configured, the app does not grant a client-side 30-day entitlement by default.
+- Local IndexedDB accounting data is not deleted on sign-in or sign-out.
 
-## Intended sign-in flow
+## Required configuration
 
-Use Supabase Auth email + password initially. The UI should support:
-1. Create account with email and password.
-2. Sign in with email and password.
-3. Sign out.
-4. Password reset by email.
-5. Clear Persian error messages for invalid credentials, duplicate email, offline connection, and unconfirmed email.
+1. In the Supabase project, enable the Email provider.
+2. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the local build environment and GitHub Actions secrets.
+3. Configure Supabase Site URL / redirect allow-list for the deployed web URL and password-reset redirect. Do not guess a production URL.
+4. Configure email delivery suitable for public use; the default provider may have low rate limits.
+5. Set `VITE_BILLING_API_URL` to the trusted subscription API when that backend is deployed.
 
-## Required implementation work
+Only the public Supabase URL and anon/publishable key belong in the client. Never place the service-role key, Cafe Bazaar credentials, or store verification secrets in the app or repository.
 
-1. Add `@supabase/supabase-js` as an application dependency and configure the Vite public variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. These public client values are not service-role secrets. Never put a service-role key in the app or repository.
-2. Add a dedicated Supabase client module and an email-auth UI.
-3. Replace the local-PIN-only gate with an explicit migration path: preserve the existing PIN as an optional local app lock, but use Supabase session state for online account identity.
-4. Do not delete IndexedDB accounting data when signing out. Do not assume the existing local records automatically belong to the newly signed-in user. User-scoped cloud sync needs a separate design and explicit migration.
-5. Configure password reset redirect URLs and email delivery in Supabase; default email delivery limits may be unsuitable for a public launch.
-6. Test signup, sign-in, sign-out, reset, app restart/session restoration, offline behavior, and existing local accounting records on web and Android before merging.
+## Backend contract still required
 
-## Dashboard settings
+The backend must validate the Supabase JWT from the `Authorization: Bearer <access_token>` header on every subscription route. It must derive the user ID from the verified token and ignore any user ID supplied by the client.
 
-The owner confirmed that **Enable Email provider** is on. No other dashboard settings need to be changed yet. Do not enable Phone for the Iran-focused launch unless a supported SMS provider is selected.
+Required routes:
 
-## Safety / release status
+- `GET /subscription/status`
+- `POST /subscription/checkout`
+- `POST /subscription/store/verify`
 
-This file is planning guidance only. It does not mean email login has been implemented, built, tested, or deployed. Keep this branch and the subscription database migration as drafts until the complete auth flow is implemented and tested.
+The store verification endpoint must verify the purchase with Cafe Bazaar from trusted server code, be idempotent, and grant entitlement only after successful verification. The native Android Cafe Bazaar billing SDK layer is not implemented by this email-auth change.
+
+## Data migration and privacy
+
+The app's accounting data is currently stored locally in IndexedDB. Logging in with an email does not automatically upload or assign those records to the account. Do not clear local records during logout. Cloud sync and moving records between devices require a separate, explicit user-scoped design.
+
+## Validation required before release
+
+- Set real Supabase project configuration and test signup, confirmed-email sign-in, invalid password, reset link, logout, session restoration, and offline errors.
+- Test existing local accounting records before and after sign-in/out on web and Android.
+- Deploy and test the authenticated subscription backend.
+- Test Cafe Bazaar purchase, restore, duplicate verification, cancellation/refund, and expiry on Android.
+- Confirm the GitHub Actions build check passes before merging.
