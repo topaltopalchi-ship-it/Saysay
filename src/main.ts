@@ -1,7 +1,7 @@
 import "./style.css";
 import "./ui-entrypoints";
 import { scanBarcode } from "./barcode-scanner";
-import { authScreen } from "./auth";
+import { authScreen, clearPin, hasPin } from "./auth";
 import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import { Filesystem, Directory } from "@capacitor/filesystem";
@@ -76,7 +76,7 @@ modal.insertAdjacentHTML(
 );
 
 modal.querySelector("#auth-logout")?.addEventListener("click", () => {
-  localStorage.removeItem("sai-sai-unlocked");
+  clearPin();
   modal.remove();
 authScreen(() => {
   localStorage.setItem("sai-sai-unlocked", "1");
@@ -1877,7 +1877,7 @@ void (async () => {
     console.error("Sayar startup repair/setup failed", error);
   }
   
-if (localStorage.getItem("sai-sai-unlocked") === "1") {
+if (hasPin()) {
   await render();
 } else {
   authScreen(() => {
