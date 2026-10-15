@@ -96,10 +96,8 @@ Deno.serve(async (req) => {
     }
     const { error: resetError } = await admin.auth.admin.updateUserById(profile.user_id, { password: newPassword });
     if (resetError) return json({ error: "تغییر رمز انجام نشد؛ دوباره تلاش کنید." }, 500);
-    // Rotate the recovery code after successful use so it cannot be replayed.
-    const { error: rotateError } = await admin.from("user_profiles")
-      .update({ recovery_code_hash: null }).eq("user_id", profile.user_id);
-    if (rotateError) return json({ error: "رمز تغییر کرد، اما کد بازیابی مصرف‌شده باطل نشد. با پشتیبانی تماس بگیرید." }, 500);
+    // Keep the high-entropy recovery code usable until a separate code-rotation flow
+    // is implemented. Never return the stored hash or raw code from this endpoint.
     return json({ ok: true });
   }
 
