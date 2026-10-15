@@ -2,9 +2,8 @@ name: Sayar CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/cafebazaar-poolakey-integration]
   pull_request:
-    branches: [main]
 
 permissions:
   contents: read
@@ -19,26 +18,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
       - name: Install
         run: npm install
       - name: Build
         run: |
           set -o pipefail
           npm run build 2>&1 | tee build.log
-          echo "---BUILD-LOG---"
-          cat build.log
       - name: Upload build log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-log
           path: build.log
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "21"
 
   android:
     runs-on: ubuntu-latest
@@ -50,6 +42,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
