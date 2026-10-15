@@ -16,40 +16,22 @@ export interface StorePurchase {
 }
 
 const API_BASE = (import.meta.env.VITE_BILLING_API_URL as string | undefined)?.replace(/\/$/, "");
-const BILLING_DISABLED = (import.meta.env.VITE_BILLING_DISABLED as string | undefined) === "true";
-const TRIAL_DAYS = 30;
-// This versioned key starts a fresh 30-day trial for the current test/release build.
-// A production store release should move entitlement enforcement to the store/backend.
-const TRIAL_MS = TRIAL_DAYS * 24 * 60 * 60 * 1000;
-const TRIAL_STARTED_KEY = "sai-sai-trial-started-at-v3";
 
-function getTrialStartedAt(): number {
-  const stored = Number(localStorage.getItem(TRIAL_STARTED_KEY));
-  if (Number.isFinite(stored) && stored > 0) return stored;
-  const now = Date.now();
-  localStorage.setItem(TRIAL_STARTED_KEY, String(now));
-  return now;
-}
-
-function getLocalTrialSubscription(): Subscription {
-  const startedAt = getTrialStartedAt();
-  const expiresAt = startedAt + TRIAL_MS;
-  return Date.now() < expiresAt
-    ? { status: "active", plan: "monthly", expiresAt, provider: "web", isTrial: true }
-    : { status: "expired", plan: "none", expiresAt, provider: "web", isTrial: true };
-}
-
+/**
+ * Subscription entitlements must come from the authenticated server.
+ * Never create a trial or grant access locally: local storage and the device
+ * clock are user-controlled and a reinstall would reset a local trial.
+ */
 export async function getSubscription(): Promise<Subscription> {
-  if (BILLING_DISABLED) return getLocalTrialSubscription();
-  // Without a configured billing server, every fresh installation gets a 30-day local trial.
-  // Once the trial ends, the normal subscription paywall is shown.
-  if (!API_BASE) return getLocalTrialSubscription();
+  if (!API_BASE) {
+    throw new Error("سرویس اشتراک پیکربندی نشده است؛ دسترسی آزمایشی محلی فعال نمی‌شود.");
+  }
 
   const response = await fetch(`${API_BASE}/subscription/status`, {
     credentials: "include",
     headers: { Accept: "application/json" },
   });
-  if (!response.ok) throw new Error("وضعیت اشتراک دریافت نشد");
+  if (!response.ok) throw new Error("وضعیت اشتراک از سرور دریافت نشد");
   return response.json() as Promise<Subscription>;
 }
 
@@ -58,7 +40,7 @@ export async function getSubscription(): Promise<Subscription> {
  * Never put gateway secrets in the frontend.
  */
 export async function createMonthlyCheckout(): Promise<string> {
-  if (!API_BASE) throw new Error("سرویس اشتراک هنوز به سرور سایار متصل نشده است");
+  if (!API_BASE) throw new Error("سرویس اشتراک هنوز به سرور سای‌سای متصل نشده است");
 
   const response = await fetch(`${API_BASE}/subscription/checkout`, {
     method: "POST",
@@ -80,7 +62,7 @@ export async function createMonthlyCheckout(): Promise<string> {
  * The backend verifies the token with the store and grants the entitlement.
  */
 export async function verifyStorePurchase(purchase: StorePurchase): Promise<Subscription> {
-  if (!API_BASE) throw new Error("سرویس اشتراک هنوز به سرور سایار متصل نشده است");
+  if (!API_BASE) throw new Error("سرویس اشتراک هنوز به سرور سای‌سای متصل نشده است");
 
   const response = await fetch(`${API_BASE}/subscription/store/verify`, {
     method: "POST",
