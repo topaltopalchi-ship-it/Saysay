@@ -1882,9 +1882,9 @@ void (async () => {
 if (localStorage.getItem("sai-sai-unlocked") === "1") {
   await render();
 } else {
-  authScreen(() => {
+  openCloudAccount(() => {
     localStorage.setItem("sai-sai-unlocked", "1");
     void render();
-  });
+  }, true);
 }
 })();
