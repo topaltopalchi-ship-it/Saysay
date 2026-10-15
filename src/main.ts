@@ -78,11 +78,13 @@ modal.insertAdjacentHTML(
 
 modal.querySelector("#auth-logout")?.addEventListener("click", () => {
   localStorage.removeItem("sai-sai-unlocked");
+  localStorage.removeItem("sai-sai-access-mode");
   modal.remove();
-authScreen(() => {
-  localStorage.setItem("sai-sai-unlocked", "1");
-  void render();
-});
+  openCloudAccount((mode) => {
+    localStorage.setItem("sai-sai-access-mode", mode);
+    localStorage.setItem("sai-sai-unlocked", "1");
+    void render();
+  }, true);
 }); 
   modal.querySelector("#settings-close")?.addEventListener("click", () => modal.remove());
   modal.querySelector("#pricing-settings")?.addEventListener("click", async () => { modal.remove(); document.body.insertAdjacentHTML("beforeend", pricingSettingsModal()); bindPricingSettingsModal(); });
@@ -1879,10 +1881,11 @@ void (async () => {
     console.error("Sayar startup repair/setup failed", error);
   }
   
-if (localStorage.getItem("sai-sai-unlocked") === "1") {
+if (localStorage.getItem("sai-sai-unlocked") === "1" && localStorage.getItem("sai-sai-access-mode")) {
   await render();
 } else {
-  openCloudAccount(() => {
+  openCloudAccount((mode) => {
+    localStorage.setItem("sai-sai-access-mode", mode);
     localStorage.setItem("sai-sai-unlocked", "1");
     void render();
   }, true);
