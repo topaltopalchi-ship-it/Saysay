@@ -1,7 +1,7 @@
 project_id = "saysay"
 
-[functions.username-signup]
+[functions.quick-processor]
 verify_jwt = false
 
-[functions.username-reset]
+[functions.dynamic-worker]
 verify_jwt = false
