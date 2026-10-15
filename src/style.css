@@ -754,3 +754,100 @@ body{background:radial-gradient(circle at 12% 0,#223657 0,#10182a 34%,#090e1b 78
   .auth-backdrop { align-items:flex-start; }
   .auth-modal { margin-top:0; }
 }
+
+
+/* SaySay visual refresh: calm emerald finance palette, clear hierarchy, and softer surfaces. */
+:root {
+  --accent: #14b8a6;
+  --accent-soft: #123d3b;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #fb7185;
+  --border: #263d4a;
+  --surface: #101f2a;
+  --surface-2: #152b36;
+  --surface-3: #1b3740;
+}
+body {
+  background:
+    radial-gradient(ellipse at 12% 0%, #123b3a 0%, transparent 38%),
+    linear-gradient(160deg, #0b1720 0%, #0d1722 52%, #09131b 100%);
+}
+.topbar h1 { letter-spacing: -.5px; }
+.hero {
+  border-color: #24534f;
+  background: linear-gradient(135deg, #153a3b 0%, #132b35 62%, #10232e 100%);
+  box-shadow: 0 18px 42px #020a0d66;
+}
+.hero-kicker { color: #5eead4; }
+.hero-mark, .paywall-logo, .auth-mark {
+  background: linear-gradient(145deg, #14b8a6, #087f73);
+  box-shadow: 0 10px 28px #14b8a633;
+}
+.primary-button {
+  background: linear-gradient(135deg, #0d9488, #087f73);
+  box-shadow: 0 8px 20px #0d948833;
+}
+.primary-button:hover { filter: brightness(1.08); }
+.secondary-button {
+  border-color: #31505a;
+  background: #162b35;
+  color: #e4f4f3;
+}
+.icon-button {
+  border-color: #29424d;
+  background: #132630;
+}
+.panel, .stat-card, .quick-card {
+  border-color: #263e49;
+  background: linear-gradient(145deg, #13232e, #101d27);
+}
+.panel { box-shadow: 0 10px 28px #020a0d35; }
+.stat-card.primary { border-color: #24534f; }
+.stat-card.primary strong { color: #5eead4; }
+.stat-card.success strong { color: #6ee7b7; }
+.stat-card.warning strong { color: #fcd34d; }
+.stat-card.danger strong { color: #fda4af; }
+.quick-card b, .transaction-icon {
+  background: #164541;
+  color: #7eeadd;
+}
+.quick-card:hover {
+  background: #18333c;
+  border-color: #34746d;
+}
+.nav-item.active {
+  color: #5eead4;
+  background: linear-gradient(135deg, #153d3a, #163039);
+}
+.bottom-nav {
+  border-color: #29434d;
+  background: #0d1b25f5;
+  box-shadow: 0 12px 40px #0008;
+}
+.plan-pill.active {
+  color: #6ee7b7;
+  border-color: #226b58;
+  background: #10372e;
+}
+.field input:focus, .field select:focus {
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 3px #14b8a61c;
+}
+.stat-card, .quick-card, .panel, .subscription-card, .price-card {
+  transition: border-color .18s ease, background-color .18s ease, transform .18s ease;
+}
+button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid #5eead4;
+  outline-offset: 2px;
+}
+.auth-footnote { color: #9eacb7; }
+.welcome-modal { text-align: center; }
+.welcome-modal .muted { margin: 0 0 14px; }
+.welcome-modal .auth-footnote {
+  padding-top: 12px;
+  border-top: 1px solid #263e49;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
