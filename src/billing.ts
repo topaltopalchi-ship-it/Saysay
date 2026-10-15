@@ -74,3 +74,21 @@ export async function verifyStorePurchase(purchase: StorePurchase): Promise<Subs
   if (!response.ok) throw new Error("تأیید خرید فروشگاه ناموفق بود");
   return response.json() as Promise<Subscription>;
 }
+
+/** CafeBazaar subscription product id configured in the developer console. */
+export const BAZAAR_SUBSCRIPTION_PRODUCT_ID = "Saysay110";
+
+/**
+ * Verify a purchase token obtained from the native CafeBazaar billing SDK.
+ * The server must independently enforce this product id and verify the token
+ * with CafeBazaar before granting subscription access.
+ */
+export async function verifyBazaarPurchase(purchaseToken: string): Promise<Subscription> {
+  const token = purchaseToken.trim();
+  if (!token) throw new Error("رسید خرید کافه‌بازار دریافت نشد");
+  return verifyStorePurchase({
+    provider: "bazaar",
+    productId: BAZAAR_SUBSCRIPTION_PRODUCT_ID,
+    purchaseToken: token,
+  });
+}
