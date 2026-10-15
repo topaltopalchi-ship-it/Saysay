@@ -8,6 +8,8 @@ export interface Subscription {
   expiresAt: number | null;
   provider?: BillingProvider;
   isTrial?: boolean;
+  priceToman?: number;
+  durationDays?: number;
 }
 
 export interface StorePurchase {
@@ -19,8 +21,6 @@ export interface StorePurchase {
 const API_BASE = (import.meta.env.VITE_BILLING_API_URL as string | undefined)?.replace(/\/$/, "");
 const BILLING_DISABLED = (import.meta.env.VITE_BILLING_DISABLED as string | undefined) === "true";
 const TRIAL_DAYS = 30;
-// This versioned key starts a fresh 30-day trial for the current test/release build.
-// A production store release should move entitlement enforcement to the store/backend.
 const TRIAL_MS = TRIAL_DAYS * 24 * 60 * 60 * 1000;
 const TRIAL_STARTED_KEY = "sai-sai-trial-started-at-v3";
 
@@ -36,34 +36,28 @@ function getLocalTrialSubscription(): Subscription {
   const startedAt = getTrialStartedAt();
   const expiresAt = startedAt + TRIAL_MS;
   return Date.now() < expiresAt
-    ? { status: "active", plan: "monthly", expiresAt, provider: "web", isTrial: true }
-    : { status: "expired", plan: "none", expiresAt, provider: "web", isTrial: true };
+    ? { status: "active", plan: "monthly", expiresAt, provider: "web", isTrial: true, priceToman: 100000, durationDays: 30 }
+    : { status: "expired", plan: "none", expiresAt, provider: "web", isTrial: true, priceToman: 100000, durationDays: 30 };
 }
 
+/** The authenticated account's entitlement is decided by Supabase, not the device clock. */
 export async function getSubscription(): Promise<Subscription> {
   if (BILLING_DISABLED) return getLocalTrialSubscription();
+
   if (supabase) {
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     if (sessionError) throw new Error("نشست حساب کاربری بررسی نشد");
-    const user = sessionData.session?.user;
-    if (user) {
-      const { data: profile, error } = await supabase
-        .from("user_profiles")
-        .select("trial_started_at,trial_ends_at")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (error || !profile) throw new Error("وضعیت اشتراک حساب دریافت نشد");
-      const expiresAt = Date.parse(profile.trial_ends_at);
-      const startedAt = Date.parse(profile.trial_started_at);
-      return {
-        status: Date.now() < expiresAt ? "active" : "expired",
-        plan: Date.now() < expiresAt ? "monthly" : "none",
-        expiresAt,
-        provider: "web",
-        isTrial: true,
-      };
+    if (sessionData.session) {
+      const { data, error } = await supabase.functions.invoke("subscription-status", { method: "POST" });
+      if (error) throw new Error("وضعیت اشتراک از سرور دریافت نشد");
+      const subscription = data as Subscription;
+      if (!subscription || !["active", "expired", "pending", "none"].includes(subscription.status)) {
+        throw new Error("پاسخ وضعیت اشتراک معتبر نیست");
+      }
+      return subscription;
     }
   }
+
   if (API_BASE) {
     const response = await fetch(`${API_BASE}/subscription/status`, {
       credentials: "include",
@@ -72,15 +66,14 @@ export async function getSubscription(): Promise<Subscription> {
     if (!response.ok) throw new Error("وضعیت اشتراک دریافت نشد");
     return response.json() as Promise<Subscription>;
   }
-  throw new Error("برای بررسی اشتراک، ابتدا وارد حساب کاربری شوید.");
+
+  // Guest mode is a local-only preview trial. Account trial is server-authoritative.
+  return getLocalTrialSubscription();
 }
 
-/**
- * Web/PWA checkout. The server decides the amount and provider.
- * Never put gateway secrets in the frontend.
- */
+/** Web/PWA checkout. The server decides the amount and provider. */
 export async function createMonthlyCheckout(): Promise<string> {
-  if (!API_BASE) throw new Error("سرویس اشتراک هنوز به سرور سایار متصل نشده است");
+  if (!API_BASE) throw new Error("پرداخت اینترنتی هنوز به سرویس پرداخت متصل نشده است");
 
   const response = await fetch(`${API_BASE}/subscription/checkout`, {
     method: "POST",
@@ -96,13 +89,12 @@ export async function createMonthlyCheckout(): Promise<string> {
 }
 
 /**
- * Bazaar/Myket purchase verification.
- * The native Android layer obtains the purchase token from the store SDK,
- * then sends only the token + product id to our backend.
- * The backend verifies the token with the store and grants the entitlement.
+ * Store purchases must be verified by a trusted backend before entitlement is granted.
+ * This endpoint is intentionally not called until the Android Bazaar SDK/product ID
+ * and the backend's official Bazaar verification credentials are configured.
  */
 export async function verifyStorePurchase(purchase: StorePurchase): Promise<Subscription> {
-  if (!API_BASE) throw new Error("سرویس اشتراک هنوز به سرور سایار متصل نشده است");
+  if (!API_BASE) throw new Error("تأیید خرید کافه‌بازار هنوز به سرویس اشتراک متصل نشده است");
 
   const response = await fetch(`${API_BASE}/subscription/store/verify`, {
     method: "POST",
