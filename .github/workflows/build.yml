@@ -7,6 +7,7 @@ on:
       - main
       - feature/monthly-subscription-foundation
       - feature/email-auth-integration
+      - feature/username-auth-recovery
 
 jobs:
   build:

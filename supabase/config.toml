@@ -1,0 +1,7 @@
+project_id = "saysay"
+
+[functions.quick-processor]
+verify_jwt = false
+
+[functions.dynamic-worker]
+verify_jwt = false

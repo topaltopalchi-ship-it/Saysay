@@ -3,27 +3,89 @@ import { lineTotal, newId, transactionTotal } from "./domain";
 
 const DB_NAME = "sayar-db";
 const DB_VERSION = 5;
+const MIGRATION_KEY = "sayar-db-first-account-migration-v1";
 
 const stores = ["products", "parties", "transactions", "movements", "expenses", "accounts", "accountEntries", "checks", "orders"] as const;
 type StoreName = typeof stores[number];
 
 let database: IDBDatabase | null = null;
+let databaseName = DB_NAME;
 
-function openDb(): Promise<IDBDatabase> {
-  if (database) return Promise.resolve(database);
+/** Select a private local database for each authenticated account. The legacy database is retained as a safety copy. */
+export async function setDataScope(userId?: string | null): Promise<void> {
+  const scope = userId?.trim() || null;
+  const nextName = scope ? `${DB_NAME}-user-${scope}` : DB_NAME;
+  if (databaseName !== nextName) {
+    database?.close();
+    database = null;
+    databaseName = nextName;
+  }
+  if (!scope || localStorage.getItem(MIGRATION_KEY)) return;
 
+  // Move legacy local records to the first account only, without deleting the source.
+  // Repeated puts are safe if the browser closes during a migration.
+  const legacy = await openNamedDb(DB_NAME);
+  const target = await openNamedDb(nextName);
+  try {
+    const sourceRows = await Promise.all(stores.map(store => readAllFrom<{ id: string }>(legacy, store)));
+    const sourceHasData = sourceRows.some(rows => rows.length > 0);
+    if (sourceHasData) {
+      // Merge only missing IDs. This also resumes safely after a partial migration.
+      for (let i = 0; i < stores.length; i++) {
+        if (sourceRows[i].length) await writeMissingTo(target, stores[i], sourceRows[i]);
+      }
+    }
+    localStorage.setItem(MIGRATION_KEY, scope);
+  } finally {
+    legacy.close();
+    target.close();
+  }
+}
+
+function openNamedDb(name: string): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
+    const request = indexedDB.open(name, DB_VERSION);
     request.onupgradeneeded = () => {
       const db = request.result;
       for (const store of stores) {
         if (!db.objectStoreNames.contains(store)) db.createObjectStore(store, { keyPath: "id" });
       }
     };
-
-    request.onsuccess = () => { database = request.result; resolve(database); };
+    request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error ?? new Error("خطا در باز کردن پایگاه داده"));
+  });
+}
+
+function readAllFrom<T>(db: IDBDatabase, store: StoreName): Promise<T[]> {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, "readonly");
+    const request = tx.objectStore(store).getAll();
+    request.onsuccess = () => resolve(request.result as T[]);
+    request.onerror = () => reject(request.error ?? new Error("خواندن اطلاعات قبلی ناموفق بود"));
+  });
+}
+
+function writeMissingTo<T extends { id: string }>(db: IDBDatabase, store: StoreName, rows: T[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, "readwrite");
+    const objectStore = tx.objectStore(store);
+    for (const row of rows) {
+      const request = objectStore.get(row.id);
+      request.onsuccess = () => {
+        if (request.result === undefined) objectStore.put(row);
+      };
+    }
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error ?? new Error("انتقال اطلاعات قبلی ناموفق بود"));
+    tx.onabort = () => reject(tx.error ?? new Error("انتقال اطلاعات قبلی ناموفق بود"));
+  });
+}
+
+function openDb(): Promise<IDBDatabase> {
+  if (database) return Promise.resolve(database);
+  return openNamedDb(databaseName).then(db => {
+    database = db;
+    return db;
   });
 }
 
