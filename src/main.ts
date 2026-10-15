@@ -75,13 +75,10 @@ modal.insertAdjacentHTML(
   `<button class="secondary-button wide" id="auth-logout">خروج از حساب</button>`
 );
 
-modal.querySelector("#auth-logout")?.addEventListener("click", () => {
-  void signOut();
+modal.querySelector("#auth-logout")?.addEventListener("click", async () => {
+  await signOut();
   modal.remove();
-authScreen(() => {
-  localStorage.setItem("sai-sai-unlocked", "1");
-  void render();
-});
+  authScreen(() => { void render(); });
 }); 
   modal.querySelector("#settings-close")?.addEventListener("click", () => modal.remove());
   modal.querySelector("#pricing-settings")?.addEventListener("click", async () => { modal.remove(); document.body.insertAdjacentHTML("beforeend", pricingSettingsModal()); bindPricingSettingsModal(); });
