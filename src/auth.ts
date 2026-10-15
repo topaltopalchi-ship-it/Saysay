@@ -59,14 +59,16 @@ export function authScreen(onSuccess: () => void): void {
     <form id="auth-form" novalidate>
       <label class="field"><span>نام کاربری</span><input id="auth-username" name="username" autocomplete="username" minlength="3" maxlength="24" autocapitalize="none" placeholder="مثلاً sara123" required /></label>
       <label class="field"><span>رمز عبور</span><input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="8" maxlength="128" placeholder="حداقل ۸ نویسه" required /></label>
-      <label class="field" id="auth-recovery-input-wrap" hidden><span>کد بازیابی</span><input id="auth-recovery-input" autocomplete="off" autocapitalize="characters" placeholder="کد بازیابی ذخیره‌شده" /></label>\n      <div id="auth-recovery-wrap" hidden>
+      <label class="field" id="auth-recovery-input-wrap" hidden><span>کد بازیابی</span><input id="auth-recovery-input" autocomplete="off" autocapitalize="characters" placeholder="کد بازیابی ذخیره‌شده" /></label>
+      <div id="auth-recovery-wrap" hidden>
         <div class="recovery-box"><b>کد بازیابی حساب</b><p>این کد فقط یک‌بار نمایش داده می‌شود. آن را در جای امنی نگه دارید؛ به سرور فقط اثر انگشت رمزنگاری‌شده آن ارسال می‌شود.</p><code id="auth-recovery-code"></code><button type="button" id="auth-copy-recovery" class="secondary-button wide">کپی کد بازیابی</button></div>
         <label class="recovery-confirm"><input id="auth-recovery-confirm" type="checkbox" /><span>کد بازیابی را در جای امن ذخیره کردم.</span></label>
       </div>
       <p id="auth-error" class="auth-error" role="alert" aria-live="polite"></p>
       <button id="auth-submit" class="primary-button wide" type="submit">ورود</button>
     </form>
-    <button id="auth-switch" class="secondary-button wide" type="button">ساخت حساب جدید</button>\n    <button id="auth-recover" class="secondary-button wide" type="button">بازیابی رمز با کد</button>
+    <button id="auth-switch" class="secondary-button wide" type="button">ساخت حساب جدید</button>
+    <button id="auth-recover" class="secondary-button wide" type="button">بازیابی رمز با کد</button>
     <p class="auth-footnote">اطلاعات کاری و حسابداری روی همین گوشی می‌ماند.</p>
   </section>`;
   document.body.appendChild(wrapper);
@@ -95,7 +97,8 @@ export function authScreen(onSuccess: () => void): void {
     wrapper.querySelector<HTMLButtonElement>("#auth-switch")!.textContent = mode === "login" ? "ساخت حساب جدید" : "قبلاً حساب ساخته‌ام؛ ورود";
     showError("");
   };
-  wrapper.querySelector("#auth-switch")!.addEventListener("click", () => setMode(mode === "login" ? "signup" : "login"));\n  wrapper.querySelector("#auth-recover")!.addEventListener("click", () => setMode("recover"));
+  wrapper.querySelector("#auth-switch")!.addEventListener("click", () => setMode(mode === "login" ? "signup" : "login"));
+  wrapper.querySelector("#auth-recover")!.addEventListener("click", () => setMode("recover"));
   wrapper.querySelector("#auth-copy-recovery")!.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(recoveryCode);
@@ -120,7 +123,24 @@ export function authScreen(onSuccess: () => void): void {
       passwordInput.focus();
       return;
     }
-    if (mode === "recover") {\n      const code = wrapper.querySelector<HTMLInputElement>("#auth-recovery-input")!.value.trim();\n      if (!code) { showError("کد بازیابی را وارد کنید."); return; }\n      submit.disabled = true;\n      submit.textContent = "در حال تغییر رمز…";\n      try {\n        const response = await fetch(`${SUPABASE_URL}/functions/v1/username-auth`, { method: "POST", headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, body: JSON.stringify({ action: "recover", username, newPassword: password, recoveryCode: code }) });\n        const result = await response.json() as AuthResponse;\n        if (!response.ok || result.error) throw new Error(result.error || "بازیابی رمز ناموفق بود.");\n        setMode("login");\n        passwordInput.value = "";\n        wrapper.querySelector<HTMLInputElement>("#auth-recovery-input")!.value = "";\n        showError("رمز تغییر کرد. با رمز جدید وارد شوید.");\n      } catch (e) { showError(e instanceof Error ? e.message : "بازیابی رمز ناموفق بود."); }\n      finally { submit.disabled = false; submit.textContent = mode === "login" ? "ورود" : mode === "signup" ? "ساخت حساب" : "تغییر رمز"; }\n      return;\n    }\n    if (mode === "signup" && !recoveryCode) {
+    if (mode === "recover") {
+      const code = wrapper.querySelector<HTMLInputElement>("#auth-recovery-input")!.value.trim();
+      if (!code) { showError("کد بازیابی را وارد کنید."); return; }
+      submit.disabled = true;
+      submit.textContent = "در حال تغییر رمز…";
+      try {
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/username-auth`, { method: "POST", headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, body: JSON.stringify({ action: "recover", username, newPassword: password, recoveryCode: code }) });
+        const result = await response.json() as AuthResponse;
+        if (!response.ok || result.error) throw new Error(result.error || "بازیابی رمز ناموفق بود.");
+        setMode("login");
+        passwordInput.value = "";
+        wrapper.querySelector<HTMLInputElement>("#auth-recovery-input")!.value = "";
+        showError("رمز تغییر کرد. با رمز جدید وارد شوید.");
+      } catch (e) { showError(e instanceof Error ? e.message : "بازیابی رمز ناموفق بود."); }
+      finally { submit.disabled = false; submit.textContent = mode === "login" ? "ورود" : mode === "signup" ? "ساخت حساب" : "تغییر رمز"; }
+      return;
+    }
+    if (mode === "signup" && !recoveryCode) {
       recoveryCode = makeRecoveryCode();
       recoveryCodeEl.textContent = recoveryCode;
       recoveryWrap.hidden = false;
