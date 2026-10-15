@@ -51,7 +51,13 @@ Deno.serve(async (req: Request) => {
   const now = Date.now();
   const expiry = data?.expires_at ? Date.parse(data.expires_at) : null;
   const active = data?.status === "active" && expiry !== null && Number.isFinite(expiry) && expiry > now;
-  const status = active ? "active" : data ? "expired" : "none";
+  const status = active
+    ? "active"
+    : data?.status === "pending"
+      ? "pending"
+      : data?.status === "active" || data?.status === "expired"
+        ? "expired"
+        : "none";
 
   return Response.json({
     status,
