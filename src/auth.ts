@@ -12,7 +12,7 @@ function getSession(): AuthSession | null {
     if (!raw) return null;
     const session = JSON.parse(raw) as AuthSession;
     if (!session.access_token) return null;
-    if (session.expires_at && session.expires_at * 1000 < Date.now() && !session.refresh_token) return null;
+    if (session.expires_at && session.expires_at * 1000 < Date.now()) return null;
     return session;
   } catch { return null; }
 }
