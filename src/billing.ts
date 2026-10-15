@@ -94,15 +94,31 @@ export async function createMonthlyCheckout(): Promise<string> {
  * and the backend's official Bazaar verification credentials are configured.
  */
 export async function verifyStorePurchase(purchase: StorePurchase): Promise<Subscription> {
-  if (!API_BASE) throw new Error("تأیید خرید کافه‌بازار هنوز به سرویس اشتراک متصل نشده است");
+  if (purchase.provider !== "bazaar") {
+    throw new Error("در حال حاضر فقط تأیید خرید کافه‌بازار پشتیبانی می‌شود");
+  }
+  if (purchase.productId !== "Saysay110" || !purchase.purchaseToken || purchase.purchaseToken.length < 8) {
+    throw new Error("اطلاعات خرید کافه‌بازار معتبر نیست");
+  }
+  if (!supabase) throw new Error("اتصال Supabase تنظیم نشده است");
 
-  const response = await fetch(`${API_BASE}/subscription/store/verify`, {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !sessionData.session) {
+    throw new Error("برای تأیید خرید ابتدا وارد حساب کاربری شوید");
+  }
+
+  const { data, error } = await supabase.functions.invoke("verify-bazaar-purchase", {
     method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify(purchase),
+    body: {
+      productId: purchase.productId,
+      purchaseToken: purchase.purchaseToken,
+    },
   });
 
-  if (!response.ok) throw new Error("تأیید خرید فروشگاه ناموفق بود");
-  return response.json() as Promise<Subscription>;
+  if (error) throw new Error("تأیید خرید کافه‌بازار ناموفق بود");
+  const subscription = data as Subscription;
+  if (!subscription || subscription.status !== "active" || subscription.provider !== "bazaar") {
+    throw new Error("خرید توسط سرور تأیید نشد");
+  }
+  return subscription;
 }
