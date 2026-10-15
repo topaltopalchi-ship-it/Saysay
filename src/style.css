@@ -722,3 +722,35 @@ body{background:radial-gradient(circle at 12% 0,#223657 0,#10182a 34%,#090e1b 78
   background: #17263b !important;
   border: 1px solid #475569 !important;
 }
+
+
+/* Authentication modal: keep actions above Android system navigation and keyboard. */
+.auth-backdrop {
+  align-items: flex-start;
+  overflow-y: auto;
+  padding: max(18px, env(safe-area-inset-top, 0px)) 14px max(28px, env(safe-area-inset-bottom, 0px));
+  -webkit-overflow-scrolling: touch;
+}
+.auth-modal {
+  width: min(100%, 430px);
+  max-height: calc(100dvh - 36px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  margin: auto;
+  padding-bottom: max(22px, env(safe-area-inset-bottom, 0px));
+}
+.auth-mark { width: 52px; height: 52px; display:grid; place-items:center; margin: 0 auto 12px; border-radius: 17px; background: linear-gradient(145deg,#2563eb,#1e40af); color:#fff; font-size:27px; font-weight:900; }
+.auth-modal h2, .auth-modal > .muted { text-align:center; }
+.auth-modal form { padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)); }
+.auth-modal input { font-size:16px; }
+.auth-modal .primary-button, .auth-modal .secondary-button { min-height:48px; margin-top:8px; }
+.auth-error { color:#fca5a5; font-size:12px; line-height:1.8; min-height:0; overflow-wrap:anywhere; }
+.recovery-box { margin:12px 0; padding:12px; border:1px solid #334155; border-radius:14px; background:#111a2a; }
+.recovery-box p { color:#cbd5e1; font-size:11px; line-height:1.9; }
+.recovery-box code { display:block; direction:ltr; overflow-wrap:anywhere; margin:10px 0; padding:10px; border-radius:9px; background:#070b12; color:#bfdbfe; font-size:12px; user-select:all; }
+.recovery-confirm { display:flex; align-items:center; gap:8px; font-size:12px; padding:8px 0; }
+.recovery-confirm input { width:18px; height:18px; flex:0 0 auto; }
+.auth-footnote { color:#64748b; font-size:10px; line-height:1.8; text-align:center; margin:14px 0 0; }
+@media (max-height: 650px) {
+  .auth-backdrop { align-items:flex-start; }
+  .auth-modal { margin-top:0; }
+}
