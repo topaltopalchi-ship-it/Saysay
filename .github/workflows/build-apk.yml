@@ -3,7 +3,7 @@ name: Build and Release Signed Android APK
 on:
   workflow_dispatch:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, feature/supabase-username-auth-trial ]
 
 permissions:
   contents: write
@@ -30,6 +30,9 @@ jobs:
         run: npm install
 
       - name: Build web app
+        env:
+          VITE_SUPABASE_URL: https://msiiyofbjymwjwgfjbpw.supabase.co
+          VITE_SUPABASE_ANON_KEY: sb_publishable_d8eYB6N-49hGZIPVma8HuQ_EwAX1tSW
         run: npm run build
 
       - name: Add Android platform if needed

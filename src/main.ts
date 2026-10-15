@@ -1,7 +1,7 @@
 import "./style.css";
 import "./ui-entrypoints";
 import { scanBarcode } from "./barcode-scanner";
-import { authScreen } from "./auth";
+import { authScreen, hasAuthenticatedSession, signOut, welcomeScreen } from "./auth";
 import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import { Filesystem, Directory } from "@capacitor/filesystem";
@@ -72,16 +72,17 @@ function bindSettingsModal(): void {
   if (!modal) return;
 modal.insertAdjacentHTML(
   "beforeend",
-  `<button class="secondary-button wide" id="auth-logout">خروج از حساب</button>`
+  `<button class="secondary-button wide" id="auth-account">ورود / ساخت حساب کاربری</button><button class="secondary-button wide" id="auth-logout">خروج از حساب</button>`
 );
-
-modal.querySelector("#auth-logout")?.addEventListener("click", () => {
-  localStorage.removeItem("sai-sai-unlocked");
+modal.querySelector("#auth-account")?.addEventListener("click", () => {
   modal.remove();
-authScreen(() => {
-  localStorage.setItem("sai-sai-unlocked", "1");
-  void render();
+  authScreen(() => { localStorage.removeItem("sai-sai-guest-mode"); void render(); });
 });
+
+modal.querySelector("#auth-logout")?.addEventListener("click", async () => {
+  await signOut();
+  modal.remove();
+  authScreen(() => { void render(); });
 }); 
   modal.querySelector("#settings-close")?.addEventListener("click", () => modal.remove());
   modal.querySelector("#pricing-settings")?.addEventListener("click", async () => { modal.remove(); document.body.insertAdjacentHTML("beforeend", pricingSettingsModal()); bindPricingSettingsModal(); });
@@ -1246,16 +1247,30 @@ function paywall(subscription: Subscription): string {
 }
 
 function showSubscription(subscription: Subscription): void {
-  document.body.insertAdjacentHTML("beforeend", `<div class="modal-backdrop" id="sub-modal"><section class="modal"><button class="modal-close" id="sub-close">×</button><span class="eyebrow">اشتراک سای‌سای</span><h2>اشتراک ماهانه</h2><div class="price-card"><div><strong>پلن حرفه‌ای</strong><span>دسترسی کامل</span></div><b>ماهانه</b></div><button class="primary-button wide" id="sub-buy">ادامه پرداخت</button></section></div>`);
+  const expiry = subscription.expiresAt && Number.isFinite(subscription.expiresAt)
+    ? new Intl.DateTimeFormat("fa-IR-u-ca-persian", { year: "numeric", month: "long", day: "numeric" }).format(new Date(subscription.expiresAt))
+    : "—";
+  const isTrial = subscription.isTrial === true;
+  const isActive = subscription.status === "active";
+  const price = new Intl.NumberFormat("fa-IR").format(subscription.priceToman ?? 100000);
+  const heading = isTrial ? "دوره آزمایشی ۳۰روزه" : "اشتراک حرفه‌ای ۳۰روزه";
+  const status = isActive
+    ? (isTrial ? "دسترسی آزمایشی فعال است" : "اشتراک خریداری‌شده فعال است")
+    : "دوره رایگان یا اشتراک شما به پایان رسیده است";
+  const paymentReady = Boolean(import.meta.env.VITE_BILLING_API_URL) && !Capacitor.isNativePlatform();
+  document.body.insertAdjacentHTML("beforeend", `<div class="modal-backdrop" id="sub-modal"><section class="modal"><button class="modal-close" id="sub-close">×</button><span class="eyebrow">اشتراک سای‌سای</span><h2>${heading}</h2><p class="muted">${status}</p><div class="price-card"><div><strong>اشتراک حرفه‌ای</strong><span>۳۰ روز دسترسی</span></div><b>${price} تومان</b></div><p class="muted">پایان دسترسی فعلی: ${expiry}</p><p class="muted">اطلاعات حسابداری شما روی همین گوشی باقی می‌ماند.</p><button class="primary-button wide" id="sub-buy" ${paymentReady ? "" : "disabled"}>${paymentReady ? "ادامه پرداخت اینترنتی" : "پرداخت کافه‌بازار در حال آماده‌سازی"}</button><p class="muted">${paymentReady ? "پرداخت اینترنتی از طریق سرویس پرداخت متصل‌شده انجام می‌شود." : "برای فعال‌شدن خرید، شناسه محصول و اعتبارسنجی رسمی خرید کافه‌بازار باید تنظیم شود."}</p></section></div>`);
   document.querySelector("#sub-close")?.addEventListener("click", () => document.querySelector("#sub-modal")?.remove());
-  document.querySelector("#sub-buy")?.addEventListener("click", subscribe);
+  if (paymentReady) document.querySelector("#sub-buy")?.addEventListener("click", subscribe);
 }
 
 async function subscribe(): Promise<void> {
+  if (Capacitor.isNativePlatform()) {
+    showToast("پرداخت کافه‌بازار هنوز پیکربندی نشده است؛ فعلاً خریدی انجام نمی‌شود.");
+    return;
+  }
   try { window.location.href = await createMonthlyCheckout(); }
   catch (e) { showToast(e instanceof Error ? e.message : "پرداخت در دسترس نیست"); }
 }
-
 
 function jalaliCalendarParts(date: Date): { year: number; month: number; day: number } {
   const parts = new Intl.DateTimeFormat("en-US-u-ca-persian", { year: "numeric", month: "numeric", day: "numeric" }).formatToParts(date);
@@ -1877,12 +1892,12 @@ void (async () => {
     console.error("Sayar startup repair/setup failed", error);
   }
   
-if (localStorage.getItem("sai-sai-unlocked") === "1") {
+if (await hasAuthenticatedSession() || localStorage.getItem("sai-sai-guest-mode") === "true") {
   await render();
 } else {
-  authScreen(() => {
-    localStorage.setItem("sai-sai-unlocked", "1");
-    void render();
-  });
+  welcomeScreen(
+    () => { localStorage.setItem("sai-sai-guest-mode", "true"); void render(); },
+    () => authScreen(() => { localStorage.removeItem("sai-sai-guest-mode"); void render(); }),
+  );
 }
 })();
