@@ -27,10 +27,13 @@ export async function signUpWithUsername(username: string, password: string) {
     body: { username: normalized, password, recoveryCode },
   });
   if (error) throw new Error("ثبت‌نام انجام نشد. اتصال سرور را بررسی کنید و دوباره تلاش کنید.");
+
   const { data, error: loginError } = await getSupabaseClient().auth.signInWithPassword({
     email: internalEmail(normalized), password,
   });
-  if (loginError) throw new Error("حساب ساخته شد، اما ورود خودکار انجام نشد. با نام کاربری و رمز وارد شوید.");
+  // The account already exists at this point. Never discard the only recovery
+  // code just because automatic sign-in failed; auth.ts must still show it.
+  if (loginError) return { recoveryCode };
   return { ...data, recoveryCode };
 }
 
