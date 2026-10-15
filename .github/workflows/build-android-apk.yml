@@ -6,6 +6,14 @@ on:
     branches:
       - main
       - build/android-apk-workflow
+      - fix/server-authoritative-trial
+    paths:
+      - "src/**"
+      - "public/**"
+      - "index.html"
+      - "package.json"
+      - "capacitor.config.ts"
+      - ".github/workflows/build-android-apk.yml"
 
 permissions:
   contents: read
@@ -26,7 +34,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: "21"
 
       - name: Install dependencies
         run: npm install
@@ -37,9 +45,12 @@ jobs:
       - name: Generate Android project
         run: npx cap add android
 
+      - name: Sync app into Android project
+        run: npx cap sync android
+
       - name: Build debug APK
+        working-directory: android
         run: |
-          cd android
           chmod +x gradlew
           ./gradlew assembleDebug
 
@@ -47,6 +58,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: saisai-debug-apk
-          path: android/app/build/outputs/apk/debug/*.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
