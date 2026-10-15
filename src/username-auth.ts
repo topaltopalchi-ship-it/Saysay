@@ -61,7 +61,7 @@ export async function resetPasswordWithRecovery(
     throw new Error("رمز جدید باید حداقل ۸ کاراکتر باشد.");
   }
   const newRecoveryCode = makeRecoveryCode();
-  const { error } = await getSupabaseClient().functions.invoke("username-reset", {
+  const { error } = await getSupabaseClient().functions.invoke("dynamic-worker", {
     body: {
       username: normalizeUsername(username),
       recoveryCode: recoveryCode.trim(),
