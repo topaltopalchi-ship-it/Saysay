@@ -1,7 +1,7 @@
 import "./style.css";
 import "./ui-entrypoints";
 import { scanBarcode } from "./barcode-scanner";
-import { authScreen, hasAuthenticatedSession, signOut } from "./auth";
+import { authScreen, hasAuthenticatedSession, signOut, welcomeScreen } from "./auth";
 import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import { Filesystem, Directory } from "@capacitor/filesystem";
@@ -72,8 +72,12 @@ function bindSettingsModal(): void {
   if (!modal) return;
 modal.insertAdjacentHTML(
   "beforeend",
-  `<button class="secondary-button wide" id="auth-logout">خروج از حساب</button>`
+  `<button class="secondary-button wide" id="auth-account">ورود / ساخت حساب کاربری</button><button class="secondary-button wide" id="auth-logout">خروج از حساب</button>`
 );
+modal.querySelector("#auth-account")?.addEventListener("click", () => {
+  modal.remove();
+  authScreen(() => { localStorage.removeItem("sai-sai-guest-mode"); void render(); });
+});
 
 modal.querySelector("#auth-logout")?.addEventListener("click", async () => {
   await signOut();
@@ -1874,9 +1878,12 @@ void (async () => {
     console.error("Sayar startup repair/setup failed", error);
   }
   
-if (await hasAuthenticatedSession()) {
+if (await hasAuthenticatedSession() || localStorage.getItem("sai-sai-guest-mode") === "true") {
   await render();
 } else {
-  authScreen(() => { void render(); });
+  welcomeScreen(
+    () => { localStorage.setItem("sai-sai-guest-mode", "true"); void render(); },
+    () => authScreen(() => { localStorage.removeItem("sai-sai-guest-mode"); void render(); }),
+  );
 }
 })();
