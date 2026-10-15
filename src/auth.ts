@@ -83,7 +83,7 @@ export function authScreen(onSuccess: () => void): void {
   const recoveryConfirm = wrapper.querySelector<HTMLInputElement>("#auth-recovery-confirm")!;
 
   const showError = (message: string) => { error.textContent = message; };
-  const setMode = (next: "login" | "signup") => {
+  const setMode = (next: "login" | "signup" | "recover") => {
     mode = next;
     recoveryCode = "";
     recoveryWrap.hidden = true;
@@ -136,8 +136,8 @@ export function authScreen(onSuccess: () => void): void {
         passwordInput.value = "";
         wrapper.querySelector<HTMLInputElement>("#auth-recovery-input")!.value = "";
         showError("رمز تغییر کرد. با رمز جدید وارد شوید.");
-      } catch (e) { showError(e instanceof Error ? e.message : "بازیابی رمز ناموفق بود."); }
-      finally { submit.disabled = false; submit.textContent = mode === "login" ? "ورود" : mode === "signup" ? "ساخت حساب" : "تغییر رمز"; }
+      } catch (e) { showError(e instanceof Error ? e.message : "بازیابی رمز ناموفق بود."); submit.textContent = "تغییر رمز"; }
+      finally { submit.disabled = false; }
       return;
     }
     if (mode === "signup" && !recoveryCode) {
