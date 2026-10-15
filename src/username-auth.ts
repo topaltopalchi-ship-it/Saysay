@@ -23,7 +23,9 @@ export async function signUpWithUsername(username: string, password: string) {
     throw new Error("رمز عبور باید حداقل ۸ کاراکتر باشد.");
   }
   const recoveryCode = makeRecoveryCode();
-  const { error } = await getSupabaseClient().functions.invoke("username-signup", {
+  // Supabase function slugs are immutable when only the display name is changed.
+  // The deployed signup endpoint still uses its original slug, quick-processor.
+  const { error } = await getSupabaseClient().functions.invoke("quick-processor", {
     body: { username: normalized, password, recoveryCode },
   });
   if (error) throw new Error("ثبت‌نام انجام نشد. اتصال سرور را بررسی کنید و دوباره تلاش کنید.");
