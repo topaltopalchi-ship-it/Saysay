@@ -1,3 +1,5 @@
+import { authScreen } from "./auth";
+
 const SUPABASE_URL = "https://msiiyofbjymwjwgfjbpw.supabase.co";
 const SUPABASE_PUBLIC_KEY = "sb_publishable_d8eYB6N-49hGZIPVma8HuQ_EwAX1tSW";
 
@@ -36,17 +38,17 @@ function recoveryMarkup(code: string, message: string): string {
   </div>`;
 }
 
-export function openCloudAccount(): void {
+export function openCloudAccount(onSuccess?: () => void, startup = false): void {
   document.querySelector("#cloud-account-modal")?.remove();
   const wrapper = document.createElement("div");
   wrapper.id = "cloud-account-modal";
   wrapper.className = "modal-backdrop";
   wrapper.innerHTML = `
     <section class="modal">
-      <button class="modal-close" id="cloud-account-close" type="button">×</button>
+      <button class="modal-close" id="cloud-account-close" type="button" ${startup ? "hidden" : ""}>×</button>
       <span class="eyebrow">حساب کاربری سای‌سای</span>
-      <h2>حساب کاربری آنلاین</h2>
-      <p class="muted">این بخش برای ثبت‌نام، بررسی رمز و بازیابی حساب است. توجه: اطلاعات حسابداری فعلاً روی همین دستگاه ذخیره می‌شود و با ورود به حساب آنلاین همگام‌سازی نمی‌شود.</p>
+      <h2>${startup ? "ورود به سای‌سای" : "حساب کاربری آنلاین"}</h2>
+      <p class="muted">${startup ? "برای ورود نام کاربری و رمز عبور حساب سای‌سای را وارد کنید؛ اگر حساب ندارید، ثبت‌نام کنید." : "این بخش برای ثبت‌نام، بررسی رمز و بازیابی حساب است."} توجه: اطلاعات حسابداری فعلاً روی همین دستگاه ذخیره می‌شود و با ورود به حساب آنلاین همگام‌سازی نمی‌شود.</p>
       <div class="form-grid">
         <button class="secondary-button" id="cloud-tab-signup" type="button">ثبت‌نام</button>
         <button class="secondary-button" id="cloud-tab-signin" type="button">ورود</button>
@@ -61,6 +63,7 @@ export function openCloudAccount(): void {
         <button class="primary-button wide" id="cloud-account-submit" type="submit">ساخت حساب</button>
       </form>
       <div id="cloud-account-result"></div>
+      ${startup ? '<button class="secondary-button wide" id="cloud-local-pin" type="button">ورود با رمز محلی این دستگاه</button>' : ""}
     </section>`;
   document.body.appendChild(wrapper);
 
@@ -75,7 +78,7 @@ export function openCloudAccount(): void {
   const confirmRow = wrapper.querySelector<HTMLElement>("#cloud-confirm-row")!;
   const recoveryRow = wrapper.querySelector<HTMLElement>("#cloud-recovery-row")!;
   const submit = wrapper.querySelector<HTMLButtonElement>("#cloud-account-submit")!;
-  let mode: "signup" | "signin" | "reset" = "signup";
+  let mode: "signup" | "signin" | "reset" = startup ? "signin" : "signup";
 
   const setMode = (next: "signup" | "signin" | "reset") => {
     mode = next;
@@ -94,6 +97,11 @@ export function openCloudAccount(): void {
   wrapper.querySelector("#cloud-tab-signup")?.addEventListener("click", () => setMode("signup"));
   wrapper.querySelector("#cloud-tab-signin")?.addEventListener("click", () => setMode("signin"));
   wrapper.querySelector("#cloud-tab-reset")?.addEventListener("click", () => setMode("reset"));
+  wrapper.querySelector("#cloud-local-pin")?.addEventListener("click", () => {
+    wrapper.remove();
+    authScreen(() => onSuccess?.());
+  });
+  setMode(startup ? "signin" : "signup");
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -108,7 +116,8 @@ export function openCloudAccount(): void {
         if (password.value !== confirm.value) throw new Error("تکرار رمز عبور با رمز اصلی یکسان نیست.");
         const recoveryCode = makeRecoveryCode();
         await callFunction("quick-processor", { username: user, password: password.value, recoveryCode });
-        result.innerHTML = recoveryMarkup(recoveryCode, "حساب ساخته شد. کد بازیابی شما:");
+        result.innerHTML = recoveryMarkup(recoveryCode, "حساب ساخته شد. کد بازیابی شما:") + (onSuccess ? '<button class="primary-button wide" id="cloud-continue" type="button">کد را ذخیره کردم؛ ادامه</button>' : "");
+        wrapper.querySelector("#cloud-continue")?.addEventListener("click", () => { wrapper.remove(); onSuccess?.(); });
         wrapper.querySelector("#cloud-copy-recovery")?.addEventListener("click", async () => {
           try { await navigator.clipboard.writeText(recoveryCode); status.textContent = "کد بازیابی کپی شد."; }
           catch { status.textContent = "کپی خودکار ممکن نیست؛ کد را انتخاب و کپی کنید."; }
@@ -116,7 +125,8 @@ export function openCloudAccount(): void {
         status.textContent = "ثبت‌نام موفق بود.";
       } else if (mode === "signin") {
         await callFunction("clever-api", { username: user, password: password.value });
-        status.textContent = "نام کاربری و رمز عبور تأیید شد. قفل محلی برنامه همچنان جداگانه فعال است.";
+        status.textContent = "ورود موفق بود.";
+        if (onSuccess) { wrapper.remove(); onSuccess(); return; }
       } else {
         if (!/^[a-f0-9-]{32,80}$/i.test(recovery.value.trim())) throw new Error("کد بازیابی واردشده معتبر نیست.");
         const newRecoveryCode = makeRecoveryCode();
