@@ -38,7 +38,7 @@ function recoveryMarkup(code: string, message: string): string {
   </div>`;
 }
 
-export function openCloudAccount(onSuccess?: () => void, startup = false): void {
+export function openCloudAccount(onSuccess?: (mode: "cloud" | "local") => void, startup = false): void {
   document.querySelector("#cloud-account-modal")?.remove();
   const wrapper = document.createElement("div");
   wrapper.id = "cloud-account-modal";
@@ -99,7 +99,7 @@ export function openCloudAccount(onSuccess?: () => void, startup = false): void 
   wrapper.querySelector("#cloud-tab-reset")?.addEventListener("click", () => setMode("reset"));
   wrapper.querySelector("#cloud-local-pin")?.addEventListener("click", () => {
     wrapper.remove();
-    authScreen(() => onSuccess?.());
+    authScreen(() => onSuccess?.("local"));
   });
   setMode(startup ? "signin" : "signup");
 
@@ -117,7 +117,7 @@ export function openCloudAccount(onSuccess?: () => void, startup = false): void 
         const recoveryCode = makeRecoveryCode();
         await callFunction("quick-processor", { username: user, password: password.value, recoveryCode });
         result.innerHTML = recoveryMarkup(recoveryCode, "حساب ساخته شد. کد بازیابی شما:") + (onSuccess ? '<button class="primary-button wide" id="cloud-continue" type="button">کد را ذخیره کردم؛ ادامه</button>' : "");
-        wrapper.querySelector("#cloud-continue")?.addEventListener("click", () => { wrapper.remove(); onSuccess?.(); });
+        wrapper.querySelector("#cloud-continue")?.addEventListener("click", () => { wrapper.remove(); onSuccess?.("cloud"); });
         wrapper.querySelector("#cloud-copy-recovery")?.addEventListener("click", async () => {
           try { await navigator.clipboard.writeText(recoveryCode); status.textContent = "کد بازیابی کپی شد."; }
           catch { status.textContent = "کپی خودکار ممکن نیست؛ کد را انتخاب و کپی کنید."; }
@@ -126,7 +126,7 @@ export function openCloudAccount(onSuccess?: () => void, startup = false): void 
       } else if (mode === "signin") {
         await callFunction("clever-api", { username: user, password: password.value });
         status.textContent = "ورود موفق بود.";
-        if (onSuccess) { wrapper.remove(); onSuccess(); return; }
+        if (onSuccess) { wrapper.remove(); onSuccess("cloud"); return; }
       } else {
         if (!/^[a-f0-9-]{32,80}$/i.test(recovery.value.trim())) throw new Error("کد بازیابی واردشده معتبر نیست.");
         const newRecoveryCode = makeRecoveryCode();
