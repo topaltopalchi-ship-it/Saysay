@@ -19,7 +19,12 @@ async function callFunction(name: string, body: Record<string, string>): Promise
     body: JSON.stringify(body),
   });
   const result = await response.json().catch(() => ({})) as ApiResult;
-  if (!response.ok) throw new Error(result.error || "درخواست انجام نشد؛ دوباره تلاش کنید.");
+  if (!response.ok) {
+    const error = new Error(result.error || "درخواست انجام نشد؛ دوباره تلاش کنید.") as Error & ApiResult;
+    error.recoveryCode = result.recoveryCode;
+    error.recoveryCodeRotated = result.recoveryCodeRotated;
+    throw error;
+  }
   return result;
 }
 
@@ -132,7 +137,15 @@ export function openCloudAccount(): void {
       confirm.value = "";
       recovery.value = "";
     } catch (error) {
-      status.textContent = error instanceof Error ? error.message : "درخواست انجام نشد؛ دوباره تلاش کنید.";
+      const apiError = error as Error & ApiResult;
+      status.textContent = apiError instanceof Error ? apiError.message : "درخواست انجام نشد؛ دوباره تلاش کنید.";
+      if (apiError.recoveryCodeRotated && apiError.recoveryCode) {
+        result.innerHTML = recoveryMarkup(apiError.recoveryCode, "سرور کد بازیابی را تغییر داده است؛ این کد را حتماً ذخیره کنید:");
+        wrapper.querySelector("#cloud-copy-recovery")?.addEventListener("click", async () => {
+          try { await navigator.clipboard.writeText(apiError.recoveryCode!); status.textContent = "کد بازیابی کپی شد."; }
+          catch { status.textContent = "کپی خودکار ممکن نیست؛ کد را انتخاب و کپی کنید."; }
+        });
+      }
     } finally {
       submit.disabled = false;
     }
