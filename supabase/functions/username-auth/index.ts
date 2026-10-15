@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !serviceKey) return json({ error: "Server configuration is incomplete" }, 500);
 
-  let body: { action?: string; username?: string; password?: string; recoveryCode?: string };
+  let body: { action?: string; username?: string; password?: string; newPassword?: string; recoveryCode?: string };
   try { body = await req.json(); } catch { return json({ error: "Invalid request" }, 400); }
 
   const username = String(body.username ?? "").trim().toLowerCase();
@@ -86,13 +86,21 @@ Deno.serve(async (req) => {
 
   if (body.action === "recover") {
     const recoveryCode = String(body.recoveryCode ?? "").trim();
-    if (!recoveryCode) return json({ error: "کد بازیابی را وارد کنید." }, 400);
+    const newPassword = String(body.newPassword ?? "");
+    if (recoveryCode.length < 12 || recoveryCode.length > 128) return json({ error: "کد بازیابی معتبر نیست." }, 400);
+    if (newPassword.length < 8 || newPassword.length > 128) return json({ error: "رمز جدید باید حداقل ۸ نویسه داشته باشد." }, 400);
     const { data: profile } = await admin.from("user_profiles")
       .select("user_id,recovery_code_hash").eq("username", username).maybeSingle();
     if (!profile?.recovery_code_hash || profile.recovery_code_hash !== await sha256(recoveryCode)) {
       return json({ error: "نام کاربری یا کد بازیابی صحیح نیست." }, 401);
     }
-    return json({ error: "برای ایمنی، بازیابی رمز باید با جریان تغییر رمز یک‌بارمصرف تکمیل شود؛ این قابلیت هنوز فعال نشده است." }, 501);
+    const { error: resetError } = await admin.auth.admin.updateUserById(profile.user_id, { password: newPassword });
+    if (resetError) return json({ error: "تغییر رمز انجام نشد؛ دوباره تلاش کنید." }, 500);
+    // Rotate the recovery code after successful use so it cannot be replayed.
+    const { error: rotateError } = await admin.from("user_profiles")
+      .update({ recovery_code_hash: null }).eq("user_id", profile.user_id);
+    if (rotateError) return json({ error: "رمز تغییر کرد، اما کد بازیابی مصرف‌شده باطل نشد. با پشتیبانی تماس بگیرید." }, 500);
+    return json({ ok: true });
   }
 
   return json({ error: "Unknown action" }, 400);
