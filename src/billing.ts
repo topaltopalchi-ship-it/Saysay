@@ -1,3 +1,4 @@
+import { supabase } from "./auth";
 export type SubscriptionStatus = "active" | "expired" | "pending" | "none";
 export type BillingProvider = "web" | "bazaar" | "myket";
 
@@ -41,16 +42,37 @@ function getLocalTrialSubscription(): Subscription {
 
 export async function getSubscription(): Promise<Subscription> {
   if (BILLING_DISABLED) return getLocalTrialSubscription();
-  // Without a configured billing server, every fresh installation gets a 30-day local trial.
-  // Once the trial ends, the normal subscription paywall is shown.
-  if (!API_BASE) return getLocalTrialSubscription();
-
-  const response = await fetch(`${API_BASE}/subscription/status`, {
-    credentials: "include",
-    headers: { Accept: "application/json" },
-  });
-  if (!response.ok) throw new Error("وضعیت اشتراک دریافت نشد");
-  return response.json() as Promise<Subscription>;
+  if (supabase) {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw new Error("نشست حساب کاربری بررسی نشد");
+    const user = sessionData.session?.user;
+    if (user) {
+      const { data: profile, error } = await supabase
+        .from("user_profiles")
+        .select("trial_started_at,trial_ends_at")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (error || !profile) throw new Error("وضعیت اشتراک حساب دریافت نشد");
+      const expiresAt = Date.parse(profile.trial_ends_at);
+      const startedAt = Date.parse(profile.trial_started_at);
+      return {
+        status: Date.now() < expiresAt ? "active" : "expired",
+        plan: Date.now() < expiresAt ? "monthly" : "none",
+        expiresAt,
+        provider: "web",
+        isTrial: true,
+      };
+    }
+  }
+  if (API_BASE) {
+    const response = await fetch(`${API_BASE}/subscription/status`, {
+      credentials: "include",
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) throw new Error("وضعیت اشتراک دریافت نشد");
+    return response.json() as Promise<Subscription>;
+  }
+  throw new Error("برای بررسی اشتراک، ابتدا وارد حساب کاربری شوید.");
 }
 
 /**
