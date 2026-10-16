@@ -362,7 +362,7 @@ function layout(content: string, subscription: Subscription): void {
       </header>
       <div id="view">${content}</div>
       <nav class="bottom-nav" aria-label="ناوبری اصلی">
-        ${navItems.filter(([id]) => (isProfessionalMode() || (id !== "reports" && id !== "more" && id !== "checks")) && (id !== "reports" || isPaidSubscription() || !isProfessionalMode()).map(([id,label,icon]) => `<button class="nav-item ${activeTab === id ? "active" : ""}" data-nav="${id}"><span>${icon}</span><small>${label}</small></button>`).join("")}
+        ${navItems.filter(([id]) => (isProfessionalMode() || (id !== "reports" && id !== "more" && id !== "checks")) && (id !== "reports" || isPaidSubscription() || !isProfessionalMode())).map(([id,label,icon]) => `<button class="nav-item ${activeTab === id ? "active" : ""}" data-nav="${id}"><span>${icon}</span><small>${label}</small></button>`).join("")}
       </nav>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </main>`;
