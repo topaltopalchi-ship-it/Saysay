@@ -40,14 +40,26 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          path = Path("android/build.gradle")
+
+          path = Path("android/settings.gradle")
           source = path.read_text()
           jitpack = "maven { url 'https://jitpack.io' }"
+          marker = "dependencyResolutionManagement"
+          if marker not in source:
+              raise SystemExit("Could not find dependencyResolutionManagement in android/settings.gradle")
+
+          start = source.index(marker)
+          repositories = source.find("repositories {", start)
+          if repositories < 0:
+              raise SystemExit("Could not find dependency repositories in android/settings.gradle")
+
+          insert_at = repositories + len("repositories {")
           if jitpack not in source:
-              source = source.replace("mavenCentral()", "mavenCentral()\n        " + jitpack)
+              source = source[:insert_at] + "\\n        " + jitpack + source[insert_at:]
               path.write_text(source)
+
           if jitpack not in path.read_text():
-              raise SystemExit("Could not add JitPack repository to android/build.gradle")
+              raise SystemExit("Could not add JitPack to Android dependency repositories")
           PY
       - name: Install icon dependencies
         run: |
