@@ -25,6 +25,7 @@ import { jalaliToGregorianDate, todayJalaliInput, formatJalaliInput, toPersianDi
 import { bindVoiceAssistant, bindVoiceQuestionAssistant, bindVoiceProductAssistant, bindVoiceProductFieldAssistant, type VoiceSaleDraft, type VoiceSaleItem, type VoiceProductDraft } from "./voice-assistant";
 import { getCustomerTier, getMarketSettings, setMarketSettings, recommendPrice, tierLabel } from "./pricing";
 import { buildBusinessInsights, dailyBrief, customerScore, type BusinessInsight } from "./intelligence";
+import { consumeFeatureQuota } from "./feature-usage";
 
 type Tab = "dashboard" | "sales" | "purchases" | "orders" | "inventory" | "people" | "reports" | "more" | "checks";
 
@@ -1523,13 +1524,14 @@ async function bindActions(): Promise<void> {
     const action = actionButton.dataset.action;
     try {
       if (action === "premium-insights" || action === "premium-market") { premiumFeatureNotice(action === "premium-market" ? "قیمت‌های هوشمند بازار و تحلیل دلار و طلا" : "گزارش‌ها و تحلیل هوشمند"); }
-      else if (action === "sale") await openSaleModal();
+      else if (action === "sale") { await consumeFeatureQuota("manual_sale"); await openSaleModal(); }
       else if (action === "purchase") {
+        await consumeFeatureQuota("manual_purchase");
         products = await listProducts();
         parties = await listParties();
         openPurchaseModal(products, parties, rial, async m => { showToast(m); await render(); });
       } else if (action === "market-prices") {
-        if (!isPaidSubscription()) { premiumFeatureNotice("قیمت‌های زنده بازار"); return; }
+        await consumeFeatureQuota("market_prices");
         document.body.insertAdjacentHTML("beforeend", marketPricesModal());
         bindMarketPricesModal();
       } else if (action === "receipt") {
@@ -1540,7 +1542,7 @@ async function bindActions(): Promise<void> {
         document.body.insertAdjacentHTML("beforeend", expenseModal());
         bindExpenseModal();
       } else if (action === "daily-brief") {
-        if (!isPaidSubscription()) { premiumFeatureNotice("گزارش هوشمند روزانه"); return; }
+        await consumeFeatureQuota("smart_report");
         const [ps, pts, es, prods] = await Promise.all([listParties(), listTransactions(), listExpenses(), listProducts()]);
         const msg = dailyBrief(await buildBusinessInsights(prods, ps, pts, es)); showToast(msg);
         if ("speechSynthesis" in window) { const u = new SpeechSynthesisUtterance(msg); u.lang = "fa-IR"; u.rate = 0.9; window.speechSynthesis.cancel(); window.speechSynthesis.speak(u); }
@@ -1601,6 +1603,8 @@ async function render(): Promise<void> {
   else if (activeTab === "checks") content = await checksView();
   layout(content, subscription);
   bindVoiceAssistant(async (draft: VoiceSaleDraft) => {
+    await consumeFeatureQuota("voice_sale");
+    if (draft.items.length > 1) await consumeFeatureQuota("multi_item_voice");
     await openSaleModal();
     const modal = document.querySelector<HTMLDivElement>("#sale-modal");
     if (!modal) return;
@@ -1646,6 +1650,7 @@ async function render(): Promise<void> {
   }, showToast);
 
   bindVoiceQuestionAssistant(async (question: string) => {
+    await consumeFeatureQuota("voice_secretary");
     const parseVoiceMoney = (text: string): number => {
     const normalized = text.replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/[٬,،]/g, " ").replace(/\s+/g, " ").trim();
     const units: Record<string, number> = { هزار: 1_000, هزارتا: 1_000, میلیون: 1_000_000, میلیونی: 1_000_000, میلیارد: 1_000_000_000, میلیاردی: 1_000_000_000 };
