@@ -737,3 +737,13 @@ body{background:radial-gradient(circle at 12% 0,#223657 0,#10182a 34%,#090e1b 78
 .auth-modal .recovery-confirm input{flex:0 0 auto;margin-top:5px}
 .auth-modal .auth-footnote{margin-bottom:8px}
 @media(max-height:720px){.auth-backdrop{place-items:start center!important}.auth-modal{margin:0 auto}.auth-modal .auth-mark{margin-top:0}.auth-modal h2{font-size:clamp(20px,5vw,28px);margin-bottom:10px}.auth-modal .muted{margin:8px 0 14px}.auth-modal .field{margin-bottom:10px}.auth-modal .primary-button,.auth-modal .secondary-button{padding-top:10px;padding-bottom:10px}}
+
+
+/* Fix account creation modal: allow the entire form and submit button to scroll above Android navigation. */
+.modal-backdrop:has(#auth-recovery-code){display:flex!important;align-items:flex-start!important;justify-content:center!important;overflow-y:auto!important;overscroll-behavior:contain;padding: max(12px, env(safe-area-inset-top, 0px)) 12px max(112px, calc(env(safe-area-inset-bottom, 0px) + 96px))!important;-webkit-overflow-scrolling:touch}
+.modal-backdrop:has(#auth-recovery-code)>.modal{flex:0 0 auto;box-sizing:border-box;width:min(100%,430px)!important;max-height:none!important;height:auto!important;overflow:visible!important;margin:0 auto!important;padding:clamp(16px,4vw,24px)!important}
+.modal-backdrop:has(#auth-recovery-code) .primary-button,.modal-backdrop:has(#auth-recovery-code) button[type=submit]{display:block;width:100%;min-height:52px;white-space:normal;line-height:1.45;margin-bottom:12px}
+.modal-backdrop:has(#auth-recovery-code) #auth-recovery-code{display:block;max-width:100%;overflow-wrap:anywhere;word-break:break-all;font-size:clamp(11px,3.2vw,14px);line-height:1.7;margin:12px 0}
+.modal-backdrop:has(#auth-recovery-code) .recovery-confirm{display:flex;align-items:flex-start;gap:8px;margin:12px 0}
+.modal-backdrop:has(#auth-recovery-code) .recovery-confirm input{flex:0 0 auto;margin-top:5px}
+@media(max-height:800px){.modal-backdrop:has(#auth-recovery-code){padding-top:8px!important;padding-bottom:max(120px,calc(env(safe-area-inset-bottom,0px) + 104px))!important}.modal-backdrop:has(#auth-recovery-code)>.modal{margin-top:0!important}}
