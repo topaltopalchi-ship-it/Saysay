@@ -69,10 +69,10 @@ jobs:
           path = Path("android/build.gradle")
           content = path.read_text()
           if "https://jitpack.io" not in content:
-              pattern = r"(allprojects\\s*\\{[\\s\\S]*?repositories\\s*\\{)"
+              pattern = r"(allprojects\s*\{[\s\S]*?repositories\s*\{)"
               updated, count = re.subn(
                   pattern,
-                  r"\\1\\n        maven { url 'https://jitpack.io' }",
+                  r"\1\n        maven { url 'https://jitpack.io' }",
                   content,
                   count=1,
               )
