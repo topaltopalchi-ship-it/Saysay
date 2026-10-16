@@ -142,7 +142,7 @@ export function authScreen(onSuccess: () => void): void {
         wrapper.querySelector<HTMLInputElement>("#auth-recovery-input")!.value = "";
         showError("رمز تغییر کرد. با رمز جدید وارد شوید.");
       } catch (e) { showError(e instanceof Error ? e.message : "بازیابی رمز ناموفق بود."); }
-      finally { submit.disabled = false; submit.textContent = mode === "login" ? "ورود" : mode === "signup" ? "ساخت حساب" : "تغییر رمز"; }
+      finally { submit.disabled = false; submit.textContent = "تغییر رمز"; }
       return;
     }
     if (mode === "signup" && !recoveryCode) {
