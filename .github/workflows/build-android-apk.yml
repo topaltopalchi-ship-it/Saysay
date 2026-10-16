@@ -45,6 +45,28 @@ jobs:
       - name: Generate Android project
         run: npx cap add android
 
+      - name: Configure JitPack for Poolakey
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("android/settings.gradle")
+          content = path.read_text()
+          marker = "dependencyResolutionManagement {"
+          if marker not in content:
+              raise SystemExit("Could not find dependencyResolutionManagement in android/settings.gradle")
+          start = content.index(marker)
+          repos_marker = "repositories {"
+          repos_start = content.find(repos_marker, start)
+          if repos_start < 0:
+              raise SystemExit("Could not find repositories block in dependencyResolutionManagement")
+          insert_at = repos_start + len(repos_marker)
+          jitpack = "\n        maven { url = uri('https://jitpack.io') }"
+          if "https://jitpack.io" not in content:
+              content = content[:insert_at] + jitpack + content[insert_at:]
+              path.write_text(content)
+          print("JitPack repository configured for Poolakey")
+          PY
+
       - name: Build debug APK
         run: |
           cd android
