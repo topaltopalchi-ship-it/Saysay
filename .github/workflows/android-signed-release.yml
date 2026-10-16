@@ -41,6 +41,29 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: Add JitPack repository for CafeBazaar Poolakey
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("android/build.gradle")
+          source = path.read_text()
+          jitpack = "maven { url 'https://jitpack.io' }"
+          marker = "allprojects"
+          if marker not in source:
+              raise SystemExit("Could not find allprojects in android/build.gradle")
+          start = source.index(marker)
+          repositories = source.find("repositories {", start)
+          if repositories < 0:
+              raise SystemExit("Could not find allprojects repositories in android/build.gradle")
+          insert_at = repositories + len("repositories {")
+          if jitpack not in source:
+              source = source[:insert_at] + "\n        " + jitpack + source[insert_at:]
+              path.write_text(source)
+          if jitpack not in path.read_text():
+              raise SystemExit("Could not add JitPack to Android repositories")
+          PY
+
       - name: Ensure Android camera and speech permissions
         run: |
           python3 - <<'PY'
