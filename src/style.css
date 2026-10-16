@@ -968,3 +968,11 @@ body{background:#fff8fa}
 .report-date input{border-color:var(--say-border);background:#fff;color:var(--say-navy)}
 .product-profit-row{border-color:var(--say-border);background:#fff}
 .report-range button{background-color:var(--say-navy)!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
+
+
+/* Sky-blue modal surroundings: keep the content white and premium, with a calm airy backdrop. */
+.modal-backdrop,
+.auth-backdrop,
+.invoice-backdrop {
+  background: rgba(166, 220, 242, 0.72) !important;
+}
