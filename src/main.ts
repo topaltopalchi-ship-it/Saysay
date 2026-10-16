@@ -1,7 +1,7 @@
 import "./style.css";
 import "./ui-entrypoints";
 import { scanBarcode } from "./barcode-scanner";
-import { authScreen } from "./auth";
+import { authScreen, welcomeScreen } from "./auth";
 import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import { Filesystem, Directory } from "@capacitor/filesystem";
@@ -1880,9 +1880,17 @@ void (async () => {
 if (localStorage.getItem("sai-sai-unlocked") === "1") {
   await render();
 } else {
-  authScreen(() => {
-    localStorage.setItem("sai-sai-unlocked", "1");
-    void render();
-  });
+  welcomeScreen(
+    () => {
+      localStorage.setItem("sai-sai-unlocked", "1");
+      void render();
+    },
+    () => {
+      authScreen(() => {
+        localStorage.setItem("sai-sai-unlocked", "1");
+        void render();
+      });
+    },
+  );
 }
 })();
