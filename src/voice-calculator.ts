@@ -83,10 +83,11 @@ async function listenAndCalculate(modal: HTMLElement): Promise<void> {
     const value=calculate(expression);
     modal.querySelector<HTMLElement>("#calc-expression")!.textContent=text;
     modal.querySelector<HTMLElement>("#calc-result")!.textContent=formatResult(value);
-    // Speak the result once. Do not automatically start a second recognition cycle:
-    // Android speech services can show a native "Didn't understand" dialog when
-    // the second cycle starts without a new user request.
-    void speakSaiSai("نتیجه " + formatResult(value));
+    // Do not auto-start any further speech-recognition cycle after a successful
+    // calculation. Some Android speech services can leave a stale English
+    // "Didn't understand, please try again" message on screen. Keep the calculator
+    // result clean; voice playback is not triggered automatically.
+    void SpeechRecognition.stop().catch(() => undefined);
   } catch(e) {
     const message=e instanceof Error?e.message:"محاسبه صوتی ناموفق بود";
     // Keep transient speech-recognition failures inside the calculator instead of
