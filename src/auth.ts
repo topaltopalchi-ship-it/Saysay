@@ -69,7 +69,7 @@ export function authScreen(onSuccess: () => void): void {
       <button id="auth-submit" class="primary-button wide" type="submit">ورود</button>
     </form>
     <button id="auth-switch" class="secondary-button wide" type="button">ساخت حساب جدید</button>
-    <button id="auth-recover" class="secondary-button wide" type="button">بازیابی رمز با کد</button>
+    <button id="auth-recover" class="auth-recover-link" type="button">رمز عبور را فراموش کرده‌اید؟</button>
     <p class="auth-footnote">اطلاعات کاری و حسابداری روی همین گوشی می‌ماند.</p>
   </section>`;
   document.body.appendChild(wrapper);
@@ -98,7 +98,7 @@ export function authScreen(onSuccess: () => void): void {
         ? "حساب بسازید و ۳۰ روز رایگان از سای‌سای استفاده کنید."
         : "نام کاربری، کد بازیابی و رمز جدید را وارد کنید.";
     passwordInput.autocomplete = mode === "login" ? "current-password" : "new-password";
-    submit.textContent = mode === "login" ? "ورود" : mode === "signup" ? "ادامه و ساخت حساب" : "تغییر رمز";
+    submit.textContent = mode === "login" ? "ورود سریع" : mode === "signup" ? "ساخت حساب" : "تغییر رمز";
     wrapper.querySelector<HTMLButtonElement>("#auth-switch")!.textContent = mode === "login" ? "ساخت حساب جدید" : "قبلاً حساب ساخته‌ام؛ ورود";
     showError("");
   };
