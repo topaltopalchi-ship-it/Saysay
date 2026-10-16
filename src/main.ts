@@ -1,7 +1,7 @@
 import "./style.css";
 import "./ui-entrypoints";
 import { scanBarcode } from "./barcode-scanner";
-import { authScreen, hasAuthenticatedSession, signOut } from "./auth";
+import { authScreen, signOut, welcomeScreen } from "./auth";
 import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import { Filesystem, Directory } from "@capacitor/filesystem";
@@ -1254,7 +1254,7 @@ function bindPartyModal(): void {
 }
 
 function backupRestoreModal(): string {
-  return `<div class="modal-backdrop" id="backup-restore-modal"><section class="modal"><button class="modal-close" id="backup-restore-close">×</button><span class="eyebrow">پشتیبان</span><h2>بازیابی اطلاعات</h2><p class="muted">ابتدا فایل JSON پشتیبان سای‌سای را انتخاب کنید. داده‌های فعلی جایگزین می‌شوند.</p><div class="backup-file-picker"><input id="backup-file" type="file" accept=".json,application/json,text/json"><button type="button" class="secondary-button wide" id="backup-file-open">انتخاب فایل پشتیبان</button><p class="muted" id="backup-file-name">هنوز فایلی انتخاب نشده است.</p></div><button class="primary-button wide" id="backup-restore-submit" disabled>بازیابی</button></section></div>`;
+  return `<div class="modal-backdrop" id="backup-restore-modal"><section class="modal"><button class="modal-close" id="backup-restore-close">×</button><span class="eyebrow">پشتیبان</span><h2>بازیابی اطلاعات</h2><p class="muted">فایل JSON پشتیبان سای‌سای را انتخاب کنید. داده‌های فعلی جایگزین می‌شوند.</p><input id="backup-file" type="file" accept=".json,application/json"><button class="primary-button wide" id="backup-restore-submit">بازیابی</button></section></div>`;
 }
 
 function paywall(subscription: Subscription): string {
@@ -1562,11 +1562,36 @@ function bindReportControls(): void {
 
 }
 
+const LOCAL_TRIAL_KEY = "sai-sai-local-trial-started-at";
+const LOCAL_TRIAL_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * Temporary pre-store trial so the accounting app remains usable while Bazaar
+ * billing is not connected. This is device-local and must be replaced by
+ * server-verified trial/subscription state before production billing release.
+ */
+function withLocalTrialFallback(serverSubscription: Subscription): Subscription {
+  if (serverSubscription.status === "active" || serverSubscription.status === "expired" || serverSubscription.status === "pending") {
+    return serverSubscription;
+  }
+
+  let startedAt = Number(localStorage.getItem(LOCAL_TRIAL_KEY) || 0);
+  if (!Number.isFinite(startedAt) || startedAt <= 0) {
+    startedAt = Date.now();
+    localStorage.setItem(LOCAL_TRIAL_KEY, String(startedAt));
+  }
+
+  const expiresAt = startedAt + LOCAL_TRIAL_DURATION_MS;
+  if (Date.now() >= expiresAt) {
+    return { status: "expired", plan: "none", expiresAt, isTrial: true, durationDays: 30 };
+  }
+  return { status: "active", plan: "monthly", expiresAt, isTrial: true, durationDays: 30, provider: "web" };
+}
+
 async function render(): Promise<void> {
   void checkLowStockAlerts();
-  // Trial and subscription access must be decided by the server. If the server
-  // cannot be reached, fail closed instead of starting a device-local free trial.
-  const subscription = await getSubscription().catch(() => ({ status: "none", plan: "none", expiresAt: null } as Subscription));
+  const serverSubscription = await getSubscription().catch(() => ({ status: "none", plan: "none", expiresAt: null } as Subscription));
+  const subscription = withLocalTrialFallback(serverSubscription);
   // Bind global navigation/actions before the subscription gate so buttons always have a click handler.
   await bindActions();
   if (subscription.status !== "active") {
@@ -1890,40 +1915,7 @@ return receiptCommand ? ("دریافت " + rial(commandAmount) + " از " + comm
     const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `sai-sai-backup-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(url);
     showToast("فایل پشتیبان آماده شد");
   });
-  document.querySelector("#more-restore")?.addEventListener("click", () => {
-    document.querySelector("#backup-restore-modal")?.remove();
-    document.body.insertAdjacentHTML("beforeend", backupRestoreModal());
-    const m = document.querySelector<HTMLElement>("#backup-restore-modal");
-    if (!m) return;
-    const input = m.querySelector<HTMLInputElement>("#backup-file");
-    const openButton = m.querySelector<HTMLButtonElement>("#backup-file-open");
-    const name = m.querySelector<HTMLElement>("#backup-file-name");
-    const submit = m.querySelector<HTMLButtonElement>("#backup-restore-submit");
-    m.querySelector("#backup-restore-close")?.addEventListener("click", () => m.remove());
-    // Open the native picker synchronously from a direct user tap in Android WebView.
-    openButton?.addEventListener("click", () => input?.click());
-    input?.addEventListener("change", () => {
-      const file = input.files?.[0];
-      if (name) name.textContent = file ? `فایل انتخاب‌شده: ${file.name}` : "هنوز فایلی انتخاب نشده است.";
-      if (submit) submit.disabled = !file;
-    });
-    submit?.addEventListener("click", async () => {
-      try {
-        const file = input?.files?.[0];
-        if (!file) throw new Error("ابتدا روی «انتخاب فایل پشتیبان» بزنید");
-        if (!confirm("اطلاعات فعلی با این پشتیبان جایگزین می‌شود. ادامه می‌دهید؟")) return;
-        const data = JSON.parse(await file.text());
-        if (!Array.isArray(data.products) || !Array.isArray(data.parties) || !Array.isArray(data.transactions)) throw new Error("فایل پشتیبان معتبر نیست");
-        const db = await import("./db");
-        await db.restoreBackup(data);
-        m.remove();
-        showToast("بازیابی با موفقیت انجام شد");
-        await render();
-      } catch (e) {
-        showToast(e instanceof Error ? e.message : "بازیابی ناموفق بود");
-      }
-    });
-  });
+  document.querySelector("#more-restore")?.addEventListener("click", () => { document.body.insertAdjacentHTML("beforeend", backupRestoreModal()); const m=document.querySelector<HTMLElement>("#backup-restore-modal")!; m.querySelector("#backup-restore-close")?.addEventListener("click",()=>m.remove()); m.querySelector("#backup-restore-submit")?.addEventListener("click",async()=>{ try { const input=m.querySelector<HTMLInputElement>("#backup-file")!; const file=input.files?.[0]; if(!file) throw new Error("فایل پشتیبان را انتخاب کنید"); if(!confirm("اطلاعات فعلی با این پشتیبان جایگزین می‌شود. ادامه می‌دهید؟")) return; const data=JSON.parse(await file.text()); if(!Array.isArray(data.products)||!Array.isArray(data.parties)||!Array.isArray(data.transactions)) throw new Error("فایل پشتیبان معتبر نیست"); const db=await import("./db"); await db.restoreBackup(data); m.remove(); showToast("بازیابی با موفقیت انجام شد"); await render(); } catch(e){showToast(e instanceof Error?e.message:"بازیابی ناموفق بود");} }); });
 
 }
 
@@ -1957,15 +1949,20 @@ void (async () => {
     console.error("Sayar startup repair/setup failed", error);
   }
   
-// Only a valid Supabase session may skip the login screen; local flags cannot bypass account login.
-if (await hasAuthenticatedSession()) {
-  localStorage.setItem("sai-sai-unlocked", "1");
+if (localStorage.getItem("sai-sai-unlocked") === "1") {
   await render();
 } else {
-  localStorage.removeItem("sai-sai-unlocked");
-  authScreen(() => {
-    localStorage.setItem("sai-sai-unlocked", "1");
-    void render();
-  });
+  welcomeScreen(
+    () => {
+      localStorage.setItem("sai-sai-unlocked", "1");
+      void render();
+    },
+    () => {
+      authScreen(() => {
+        localStorage.setItem("sai-sai-unlocked", "1");
+        void render();
+      });
+    },
+  );
 }
 })();
