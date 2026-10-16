@@ -82,10 +82,18 @@ async function listenAndCalculate(modal: HTMLElement): Promise<void> {
     const expression=expressionFromSpeech(text);
     const value=calculate(expression);
     modal.querySelector<HTMLElement>("#calc-expression")!.textContent=text;
-    modal.querySelector<HTMLElement>("#calc-result")!.textContent=formatResult(value); void speakSaiSai("نتیجه " + formatResult(value));
-    speakSaiSai("نتیجه " + formatResult(value));
-    window.setTimeout(() => { if (document.body.contains(modal)) void listenAndCalculate(modal); }, 900);
-  } catch(e) { alert(e instanceof Error?e.message:"محاسبه صوتی ناموفق بود"); }
+    modal.querySelector<HTMLElement>("#calc-result")!.textContent=formatResult(value);
+    // Speak the result once. Do not automatically start a second recognition cycle:
+    // Android speech services can show a native "Didn't understand" dialog when
+    // the second cycle starts without a new user request.
+    void speakSaiSai("نتیجه " + formatResult(value));
+  } catch(e) {
+    const message=e instanceof Error?e.message:"محاسبه صوتی ناموفق بود";
+    // Keep transient speech-recognition failures inside the calculator instead of
+    // showing a blocking native-looking alert over a successfully calculated result.
+    const resultEl=modal.querySelector<HTMLElement>("#calc-result");
+    if(resultEl && message!=="عملیات شنیده نشد") resultEl.textContent=message;
+  }
   finally { button.disabled=false; button.textContent="🎙 محاسبه با صدا"; }
 }
 
