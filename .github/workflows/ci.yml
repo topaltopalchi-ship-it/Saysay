@@ -129,7 +129,7 @@ jobs:
                   }
               }
           """
-                  content, n = re.subn(r"(?m)^\\s*buildTypes\\s*\\{", signing + "\\n            buildTypes {", content, count=1)
+                  content, n = re.subn(r"(?m)^\s*buildTypes\s*\{", signing + "\n            buildTypes {", content, count=1)
               else:
                   signing = """
               signingConfigs {
@@ -141,13 +141,13 @@ jobs:
                   }
               }
           """
-                  content, n = re.subn(r"(?m)^\\s*buildTypes\\s*\\{", signing + "\\n            buildTypes {", content, count=1)
+                  content, n = re.subn(r"(?m)^\s*buildTypes\s*\{", signing + "\n            buildTypes {", content, count=1)
               if n != 1:
                   raise SystemExit("Could not find buildTypes block to configure release signing")
           if app_gradle.suffix == ".kts":
-              content, n = re.subn(r'(getByName\\("release"\\)\\s*\\{)', r'\\1\\n                signingConfig = signingConfigs.getByName("release")', content, count=1)
+              content, n = re.subn(r'(getByName\("release"\)\s*\{)', r'\1\n                signingConfig = signingConfigs.getByName("release")', content, count=1)
           else:
-              content, n = re.subn(r'(?m)(release\\s*\\{)', r'\\1\\n            signingConfig signingConfigs.release', content, count=1)
+              content, n = re.subn(r'(?m)(release\s*\{)', r'\1\n            signingConfig signingConfigs.release', content, count=1)
           if n != 1:
               raise SystemExit("Could not find release build type to attach signing configuration")
           app_gradle.write_text(content)
