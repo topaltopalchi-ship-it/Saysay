@@ -747,3 +747,10 @@ body{background:radial-gradient(circle at 12% 0,#223657 0,#10182a 34%,#090e1b 78
 .modal-backdrop:has(#auth-recovery-code) .recovery-confirm{display:flex;align-items:flex-start;gap:8px;margin:12px 0}
 .modal-backdrop:has(#auth-recovery-code) .recovery-confirm input{flex:0 0 auto;margin-top:5px}
 @media(max-height:800px){.modal-backdrop:has(#auth-recovery-code){padding-top:8px!important;padding-bottom:max(120px,calc(env(safe-area-inset-bottom,0px) + 104px))!important}.modal-backdrop:has(#auth-recovery-code)>.modal{margin-top:0!important}}
+
+
+/* Simplified authentication actions: two clear primary choices, recovery as a quiet text link. */
+.auth-modal #auth-submit{margin-top:12px;min-height:54px;font-weight:800}
+.auth-modal #auth-switch{margin-top:10px;min-height:50px;border-color:#334155;background:transparent}
+.auth-modal .auth-recover-link{display:block;width:auto;min-height:40px;margin:8px auto 0;padding:8px 12px;border:0;background:transparent;color:#93baff;font:inherit;font-size:13px;text-decoration:underline;text-underline-offset:3px}
+.auth-modal .auth-footnote{font-size:12px;text-align:center;line-height:1.7;margin-top:14px}
