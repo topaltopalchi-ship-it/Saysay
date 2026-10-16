@@ -105,7 +105,6 @@ jobs:
           python3 - <<'PY'
           import base64, os
           from pathlib import Path
-          import re
 
           app_gradle = Path("app/build.gradle")
           if not app_gradle.exists():
@@ -117,42 +116,75 @@ jobs:
           key_path.write_bytes(base64.b64decode(os.environ["ANDROID_KEYSTORE_BASE64"], validate=False))
 
           content = app_gradle.read_text()
+          is_kts = app_gradle.suffix == ".kts"
+
+          # Insert signingConfigs immediately before buildTypes, never inside another block.
           if "signingConfigs" not in content:
-              if app_gradle.suffix == ".kts":
-                  signing = """
-              signingConfigs {
-                  create("release") {
-                      storeFile = file("saysay-release.jks")
-                      storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
-                      keyAlias = System.getenv("ANDROID_KEY_ALIAS")
-                      keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
-                  }
+              if is_kts:
+                  signing = '''
+          signingConfigs {
+              create("release") {
+                  storeFile = file("saysay-release.jks")
+                  storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                  keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                  keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
               }
-          """
-                  content, n = re.subn(r"(?m)^\s*buildTypes\s*\{", signing + "\n            buildTypes {", content, count=1)
+          }
+
+          '''
               else:
-                  signing = """
-              signingConfigs {
-                  release {
-                      storeFile file("saysay-release.jks")
-                      storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
-                      keyAlias System.getenv("ANDROID_KEY_ALIAS")
-                      keyPassword System.getenv("ANDROID_KEY_PASSWORD")
-                  }
+                  signing = '''
+          signingConfigs {
+              release {
+                  storeFile file("saysay-release.jks")
+                  storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                  keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                  keyPassword System.getenv("ANDROID_KEY_PASSWORD")
               }
-          """
-                  content, n = re.subn(r"(?m)^\s*buildTypes\s*\{", signing + "\n            buildTypes {", content, count=1)
-              if n != 1:
+          }
+
+          '''
+              marker = "buildTypes {"
+              pos = content.find(marker)
+              if pos < 0:
                   raise SystemExit("Could not find buildTypes block to configure release signing")
-          if app_gradle.suffix == ".kts":
-              content, n = re.subn(r'(getByName\("release"\)\s*\{)', r'\1\n                signingConfig = signingConfigs.getByName("release")', content, count=1)
-          else:
-              content, n = re.subn(r'(?s)(buildTypes\s*\{.*?\brelease\s*\{)', r'\1\n            signingConfig signingConfigs.release', content, count=1)
-          if n != 1:
-              raise SystemExit("Could not find release build type to attach signing configuration")
+              content = content[:pos] + signing + content[pos:]
+
+          # Locate buildTypes first, then only the release block nested after it.
+          bt = content.find("buildTypes")
+          if bt < 0:
+              raise SystemExit("Could not find buildTypes block")
+          rel = content.find('getByName("release") {', bt) if is_kts else content.find("release {", bt)
+          if rel < 0:
+              raise SystemExit("Could not find release build type")
+          # Refuse to edit a release block if a signingConfig is already present in that block.
+          open_brace = content.find("{", rel)
+          depth = 0
+          close_brace = -1
+          for i in range(open_brace, len(content)):
+              if content[i] == "{":
+                  depth += 1
+              elif content[i] == "}":
+                  depth -= 1
+                  if depth == 0:
+                      close_brace = i
+                      break
+          if close_brace < 0:
+              raise SystemExit("Could not parse release build type block")
+          release_body = content[open_brace+1:close_brace]
+          if "signingConfig" not in release_body:
+              line = '\n        signingConfig = signingConfigs.getByName("release")\n' if is_kts else '\n        signingConfig signingConfigs.release\n'
+              content = content[:close_brace] + line + content[close_brace:]
           app_gradle.write_text(content)
-          print("Configured release signing using the existing GitHub Actions secrets.")
+          print("Configured stable release signing in the buildTypes.release block.")
           PY
+      - name: Verify keystore
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          keytool -list -keystore app/saysay-release.jks -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS"
       - name: Build signed release APK
         working-directory: android
         env:
