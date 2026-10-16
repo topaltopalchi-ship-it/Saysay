@@ -200,4 +200,21 @@ export function authScreen(onSuccess: () => void): void {
   usernameInput.focus();
 }
 
-
+/** First-run choice: let new users explore locally before asking them to create an account. */
+export function welcomeScreen(onGuest: () => void, onAccount: () => void): void {
+  document.querySelector("#auth-lock")?.remove();
+  const wrapper = document.createElement("div");
+  wrapper.id = "auth-lock";
+  wrapper.className = "modal-backdrop auth-backdrop";
+  wrapper.innerHTML = `<section class="modal auth-modal welcome-modal" dir="rtl">
+    <div class="auth-mark">س</div>
+    <h2>به سای‌سای خوش آمدی</h2>
+    <p class="muted">حساب‌وکتابت رو ساده شروع کن. بدون ثبت‌نام، امکانات برنامه رو ببین.</p>
+    <button id="welcome-guest" class="primary-button wide" type="button">شروع سریع بدون حساب</button>
+    <button id="welcome-account" class="secondary-button wide" type="button">ورود / ساخت حساب</button>
+    <p class="auth-footnote">اطلاعات کاری روی همین گوشی ذخیره می‌شود. برای جلوگیری از دست رفتن اطلاعات، مرتب نسخه پشتیبان بگیر.</p>
+  </section>`;
+  document.body.appendChild(wrapper);
+  wrapper.querySelector("#welcome-guest")?.addEventListener("click", () => { wrapper.remove(); onGuest(); });
+  wrapper.querySelector("#welcome-account")?.addEventListener("click", () => { wrapper.remove(); onAccount(); });
+}
