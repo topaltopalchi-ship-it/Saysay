@@ -1,7 +1,8 @@
 import { createClient, type Session } from "@supabase/supabase-js";
 
-const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.replace(/\/$/, "");
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const SUPABASE_URL = ((import.meta.env.VITE_SUPABASE_URL as string | undefined) || "https://msiiyofbjymwjwgfjbpw.supabase.co").replace(/\/$/, "");
+// Supabase anon keys are public client identifiers; access must be restricted by RLS and server-side checks.
+const SUPABASE_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zaWl5b2Zianltd2p3Z2ZqYnB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5Nzk1MjQsImV4cCI6MjEwNzU1NTUyNH0.bvK-PYO7chfm07-DfkZLnWeUFYK-XHoYJGF3I2xa3ZY";
 
 export const supabase = SUPABASE_URL && SUPABASE_KEY
   ? createClient(SUPABASE_URL, SUPABASE_KEY, {
