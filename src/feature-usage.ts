@@ -1,7 +1,7 @@
 import { supabase } from "./auth";
 
 export type LimitedFeature =
-  | "calculator" | "voice_secretary" | "voice_sale" | "voice_purchase"
+  | "calculator" | "voice_secretary" | "voice_sale" | "voice_purchase" | "voice_product"
   | "multi_item_voice" | "smart_pricing" | "market_prices" | "smart_report"
   | "advanced_reports" | "manual_sale" | "manual_purchase" | "product_create";
 
