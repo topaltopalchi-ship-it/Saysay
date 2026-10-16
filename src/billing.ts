@@ -1,4 +1,6 @@
 import { supabase } from "./auth";
+import { Capacitor } from "@capacitor/core";
+import { Poolakey } from "capacitor-poolakey";
 
 export type SubscriptionStatus = "active" | "expired" | "pending" | "none";
 export type BillingProvider = "web" | "bazaar" | "myket";
@@ -20,6 +22,9 @@ export interface StorePurchase {
 }
 
 const BAZAAR_PRODUCT_ID = "Saysay110";
+const BAZAAR_RSA_PUBLIC_KEY = (
+  (import.meta.env.VITE_CAFEBAZAAR_RSA_PUBLIC_KEY as string | undefined) || ""
+).trim();
 
 async function requireSignedInUser(): Promise<void> {
   if (!supabase) throw new Error("اتصال حساب کاربری تنظیم نشده است");
@@ -27,11 +32,6 @@ async function requireSignedInUser(): Promise<void> {
   if (error || !data.session) throw new Error("برای مدیریت اشتراک ابتدا وارد حساب سای‌سای شوید");
 }
 
-/**
- * Subscription state is authoritative on the Supabase backend.
- * Do not fall back to a device-local trial: it can be reset by reinstalling
- * and must not be confused with a verified store subscription.
- */
 export async function getSubscription(): Promise<Subscription> {
   await requireSignedInUser();
   const { data, error } = await supabase!.functions.invoke("subscription-status", {
@@ -45,11 +45,42 @@ export async function getSubscription(): Promise<Subscription> {
 }
 
 /**
- * Bazaar billing must be started by the native Android billing bridge.
- * A web checkout URL is intentionally not substituted for a Bazaar purchase.
+ * Start a native CafeBazaar subscription purchase, then activate it only
+ * after the authenticated Supabase Edge Function verifies the purchase token.
  */
-export async function createMonthlyCheckout(): Promise<string> {
-  throw new Error("پرداخت هنوز به درگاه واقعی متصل نشده است. خرید کافه‌بازار به پل بومی اندروید و تنظیمات حساب توسعه‌دهنده نیاز دارد.");
+export async function createMonthlyCheckout(): Promise<Subscription> {
+  await requireSignedInUser();
+  if (Capacitor.getPlatform() !== "android") {
+    throw new Error("خرید اشتراک فعلاً فقط در نسخه اندروید کافه‌بازار در دسترس است.");
+  }
+  if (!BAZAAR_RSA_PUBLIC_KEY) {
+    throw new Error("کلید عمومی کافه‌بازار تنظیم نشده است؛ مدیر پروژه باید CAFEBAZAAR_RSA_PUBLIC_KEY را در Secrets ساخت اندروید ثبت کند.");
+  }
+
+  let connected = false;
+  try {
+    await Poolakey.connectPayment(BAZAAR_RSA_PUBLIC_KEY);
+    connected = true;
+    const purchase = await Poolakey.subscribeProduct(BAZAAR_PRODUCT_ID, "sai-sai-monthly-v1");
+    if (purchase.productId !== BAZAAR_PRODUCT_ID || !purchase.purchaseToken) {
+      throw new Error("اطلاعات خرید اشتراک از کافه‌بازار معتبر نیست.");
+    }
+    if (purchase.purchaseState !== 0) {
+      throw new Error("کافه‌بازار خرید را کامل‌شده اعلام نکرد.");
+    }
+    return await verifyStorePurchase({
+      provider: "bazaar",
+      productId: purchase.productId,
+      purchaseToken: purchase.purchaseToken,
+    });
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error("خرید اشتراک از کافه‌بازار ناموفق بود.");
+  } finally {
+    if (connected) {
+      try { await Poolakey.disconnectPayment(); } catch { /* Do not mask purchase/verification result. */ }
+    }
+  }
 }
 
 /** Send the native Bazaar purchase token to the authenticated verification function. */
