@@ -33,6 +33,8 @@ jobs:
         run: npm install
 
       - name: Build web
+        env:
+          VITE_CAFEBAZAAR_RSA_PUBLIC_KEY: ${{ secrets.CAFEBAZAAR_RSA_PUBLIC_KEY }}
         run: npm run build
 
       - name: Generate Android project
