@@ -89,11 +89,79 @@ jobs:
           PY
       - name: Sync Capacitor
         run: npx cap sync android
-      - name: Build debug APK
+      - name: Configure stable Android signing
         working-directory: android
-        run: ./gradlew assembleDebug
-      - name: Upload debug APK
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ] || [ -z "$ANDROID_KEYSTORE_PASSWORD" ] || [ -z "$ANDROID_KEY_ALIAS" ] || [ -z "$ANDROID_KEY_PASSWORD" ]; then
+            echo "Android signing secrets are missing; refusing to create an APK with a temporary signing key."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import base64, os
+          from pathlib import Path
+          import re
+
+          app_gradle = Path("app/build.gradle")
+          if not app_gradle.exists():
+              app_gradle = Path("app/build.gradle.kts")
+          if not app_gradle.exists():
+              raise SystemExit("Could not find Android app Gradle build file")
+
+          key_path = Path("app/saysay-release.jks")
+          key_path.write_bytes(base64.b64decode(os.environ["ANDROID_KEYSTORE_BASE64"], validate=False))
+
+          content = app_gradle.read_text()
+          if "signingConfigs" not in content:
+              if app_gradle.suffix == ".kts":
+                  signing = """
+              signingConfigs {
+                  create("release") {
+                      storeFile = file("saysay-release.jks")
+                      storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                      keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                      keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+                  }
+              }
+          """
+                  content, n = re.subn(r"(?m)^\\s*buildTypes\\s*\\{", signing + "\\n            buildTypes {", content, count=1)
+              else:
+                  signing = """
+              signingConfigs {
+                  release {
+                      storeFile file("saysay-release.jks")
+                      storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                      keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                      keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+                  }
+              }
+          """
+                  content, n = re.subn(r"(?m)^\\s*buildTypes\\s*\\{", signing + "\\n            buildTypes {", content, count=1)
+              if n != 1:
+                  raise SystemExit("Could not find buildTypes block to configure release signing")
+          if app_gradle.suffix == ".kts":
+              content, n = re.subn(r'(getByName\\("release"\\)\\s*\\{)', r'\\1\\n                signingConfig = signingConfigs.getByName("release")', content, count=1)
+          else:
+              content, n = re.subn(r'(?m)(release\\s*\\{)', r'\\1\\n            signingConfig signingConfigs.release', content, count=1)
+          if n != 1:
+              raise SystemExit("Could not find release build type to attach signing configuration")
+          app_gradle.write_text(content)
+          print("Configured release signing using the existing GitHub Actions secrets.")
+          PY
+      - name: Build signed release APK
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease
+      - name: Upload signed release APK
         uses: actions/upload-artifact@v4
         with:
-          name: sai-sai-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: sai-sai-release-apk
+          path: android/app/build/outputs/apk/release/*.apk
