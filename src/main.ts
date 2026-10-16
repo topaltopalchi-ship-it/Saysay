@@ -1048,7 +1048,7 @@ function bindProductModal(): void {
   const modal = document.querySelector<HTMLDivElement>("#product-modal")!;
   modal.querySelector("#product-close")?.addEventListener("click", () => modal.remove());
   modal.querySelector("#product-scan-barcode")?.addEventListener("click", () => void scanBarcode().then(code => { const input = modal.querySelector<HTMLInputElement>("#p-sku"); if (code && input) { input.value = code; input.dispatchEvent(new Event("input", { bubbles: true })); showToast("بارکد وارد شد؛ مشخصات کالا را ذخیره کنید"); } }).catch(error => showToast(error instanceof Error ? error.message : "اسکن بارکد ناموفق بود")));
-  if (!modal.dataset.editId) bindVoiceProductAssistant(async draft => { await consumeFeatureQuota("voice_purchase"); modal.remove(); await saveVoiceProduct(draft); }, showToast, async drafts => { await consumeFeatureQuota("multi_item_voice"); modal.remove(); for (const draft of drafts) await saveVoiceProduct(draft); showToast(`${drafts.length} کالا ثبت شد`); });
+  if (!modal.dataset.editId) bindVoiceProductAssistant(async draft => { await consumeFeatureQuota("voice_product"); modal.remove(); await saveVoiceProduct(draft); }, showToast, async drafts => { await consumeFeatureQuota("multi_item_voice"); modal.remove(); for (const draft of drafts) await saveVoiceProduct(draft); showToast(`${drafts.length} کالا ثبت شد`); });
   modal.querySelector("#product-submit")?.addEventListener("click", async () => {
     try {
       const name = (modal.querySelector<HTMLInputElement>("#p-name")!.value).trim();
