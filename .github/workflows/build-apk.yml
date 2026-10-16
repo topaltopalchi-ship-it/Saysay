@@ -125,12 +125,15 @@ jobs:
               }
           '''
           if "signingConfigs {" not in s:
-              s = s.replace("  buildTypes {", signing + "  buildTypes {", 1)
-          if "signingConfig signingConfigs.release" not in s:
-              s, n = re.subn(r"(buildTypes\s*\{\s*release\s*\{)", r"\1\n      signingConfig signingConfigs.release", s, count=1)
+              s, n = re.subn(r"(^\s*buildTypes\s*\{)", lambda m: signing + "\n" + m.group(1), s, count=1, flags=re.M)
               if n != 1:
-                  raise SystemExit("buildTypes.release not found")
+                  raise SystemExit("Could not insert signingConfigs before buildTypes")
+          if not re.search(r"buildTypes\s*\{\s*release\s*\{[^}]*signingConfig\s+signingConfigs\.release", s, flags=re.S):
+              s, n = re.subn(r"(buildTypes\s*\{\s*release\s*\{)", r"\1\n            signingConfig signingConfigs.release", s, count=1)
+              if n != 1:
+                  raise SystemExit("Could not configure release build type for signing")
           p.write_text(s)
+          print("Release signing configuration installed.")
           PY
 
       - name: Build signed release APK
