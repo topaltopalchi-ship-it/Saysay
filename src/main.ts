@@ -25,7 +25,6 @@ import { jalaliToGregorianDate, todayJalaliInput, formatJalaliInput, toPersianDi
 import { bindVoiceAssistant, bindVoiceQuestionAssistant, bindVoiceProductAssistant, bindVoiceProductFieldAssistant, type VoiceSaleDraft, type VoiceSaleItem, type VoiceProductDraft } from "./voice-assistant";
 import { getCustomerTier, getMarketSettings, setMarketSettings, recommendPrice, tierLabel } from "./pricing";
 import { buildBusinessInsights, dailyBrief, customerScore, type BusinessInsight } from "./intelligence";
-import { consumeFeatureQuota } from "./feature-usage";
 
 type Tab = "dashboard" | "sales" | "purchases" | "orders" | "inventory" | "people" | "reports" | "more" | "checks";
 
@@ -1048,7 +1047,7 @@ function bindProductModal(): void {
   const modal = document.querySelector<HTMLDivElement>("#product-modal")!;
   modal.querySelector("#product-close")?.addEventListener("click", () => modal.remove());
   modal.querySelector("#product-scan-barcode")?.addEventListener("click", () => void scanBarcode().then(code => { const input = modal.querySelector<HTMLInputElement>("#p-sku"); if (code && input) { input.value = code; input.dispatchEvent(new Event("input", { bubbles: true })); showToast("بارکد وارد شد؛ مشخصات کالا را ذخیره کنید"); } }).catch(error => showToast(error instanceof Error ? error.message : "اسکن بارکد ناموفق بود")));
-  if (!modal.dataset.editId) bindVoiceProductAssistant(async draft => { await consumeFeatureQuota("voice_product"); modal.remove(); await saveVoiceProduct(draft); }, showToast, async drafts => { await consumeFeatureQuota("multi_item_voice"); modal.remove(); for (const draft of drafts) await saveVoiceProduct(draft); showToast(`${drafts.length} کالا ثبت شد`); });
+  if (!modal.dataset.editId) bindVoiceProductAssistant(async draft => { modal.remove(); await saveVoiceProduct(draft); }, showToast, async drafts => { modal.remove(); for (const draft of drafts) await saveVoiceProduct(draft); showToast(`${drafts.length} کالا ثبت شد`); });
   modal.querySelector("#product-submit")?.addEventListener("click", async () => {
     try {
       const name = (modal.querySelector<HTMLInputElement>("#p-name")!.value).trim();
@@ -1594,7 +1593,6 @@ async function render(): Promise<void> {
   else if (activeTab === "checks") content = await checksView();
   layout(content, subscription);
   bindVoiceAssistant(async (draft: VoiceSaleDraft) => {
-    await consumeFeatureQuota(draft.items && draft.items.length > 1 ? "multi_item_voice" : "voice_sale");
     await openSaleModal();
     const modal = document.querySelector<HTMLDivElement>("#sale-modal");
     if (!modal) return;
@@ -1640,7 +1638,6 @@ async function render(): Promise<void> {
   }, showToast);
 
   bindVoiceQuestionAssistant(async (question: string) => {
-    await consumeFeatureQuota(/ماشین.?حساب|حسابگر/.test(question) ? "calculator" : "voice_secretary");
     const parseVoiceMoney = (text: string): number => {
     const normalized = text.replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/[٬,،]/g, " ").replace(/\s+/g, " ").trim();
     const units: Record<string, number> = { هزار: 1_000, هزارتا: 1_000, میلیون: 1_000_000, میلیونی: 1_000_000, میلیارد: 1_000_000_000, میلیاردی: 1_000_000_000 };
