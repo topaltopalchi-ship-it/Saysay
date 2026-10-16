@@ -1020,3 +1020,43 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .bottom-nav,.bottom-navigation,.nav-bar{background:#FFFFFF;border-color:#A5DDF8}
 .nav-item.active,.bottom-nav .active{background:#E0F2FE;color:#0284C7}
 a{color:#0284C7}
+
+
+/* Reference-matched sky-blue palette across every screen and component */
+:root{
+  --say-pink:#38BDF8;
+  --say-pink-soft:#EAF7FF;
+  --say-pink-pale:#F3FAFF;
+  --say-navy:#172B4D;
+  --say-navy-soft:#344765;
+  --say-border:#A5DDF8;
+  --say-muted:#64748B;
+  --accent:#38BDF8;
+  --accent-soft:#DDF3FF;
+  --bg:#B6E5FA;
+  --bg-soft:#DDF3FF;
+  --surface:#FFFFFF;
+  --surface-2:#F7FCFF;
+  --surface-3:#EAF7FF;
+  --border:#A5DDF8;
+  --text:#172B4D;
+  --muted:#64748B;
+}
+html,body,#app{background:#B6E5FA;color:#172B4D}
+body{background:linear-gradient(180deg,#A9DFF8 0%,#BFE9FF 55%,#D9F2FF 100%);color:#172B4D}
+.shell{background:transparent}
+.hero,.panel,.stat-card,.quick-card,.subscription-card,.settings-panel,.table-wrap,
+.form-card,.search-box,.input-card,.report-card,.check-card,.person-card,.product-card,
+.transaction-card,.modal,.modal section,.empty-inline,.ledger-row,.sale-summary{
+  background-color:#FFFFFF;
+  border-color:#A5DDF8;
+}
+.subscription-card{background:linear-gradient(135deg,#FFFFFF,#EAF7FF)}
+.quick-card b,.hero-mark{background:linear-gradient(145deg,#7DD3FC,#0284C7);color:#FFFFFF}
+.primary-button{background:linear-gradient(135deg,#38BDF8,#0284C7);color:#FFFFFF}
+input,textarea,select,.field input,.field select,.report-date input{accent-color:#0EA5E9;border-color:#A5DDF8}
+input:focus,textarea:focus,select:focus,.field input:focus,.field select:focus{border-color:#38BDF8;box-shadow:0 0 0 3px #38BDF833}
+.bottom-nav,.bottom-navigation,.nav-bar{background:#FFFFFF;border-color:#A5DDF8}
+.nav-item.active,.bottom-nav .active{background:#E0F2FE;color:#0284C7}
+.transaction-icon,.plan-pill.active{background:#E0F2FE;color:#0284C7;border-color:#7DD3FC}
+a{color:#0284C7}
