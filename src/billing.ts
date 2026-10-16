@@ -1,3 +1,5 @@
+import { supabase } from "./auth";
+
 export type SubscriptionStatus = "active" | "expired" | "pending" | "none";
 export type BillingProvider = "web" | "bazaar" | "myket";
 
@@ -7,6 +9,8 @@ export interface Subscription {
   expiresAt: number | null;
   provider?: BillingProvider;
   isTrial?: boolean;
+  priceToman?: number;
+  durationDays?: number;
 }
 
 export interface StorePurchase {
@@ -15,80 +19,55 @@ export interface StorePurchase {
   purchaseToken: string;
 }
 
-const API_BASE = (import.meta.env.VITE_BILLING_API_URL as string | undefined)?.replace(/\/$/, "");
-const BILLING_DISABLED = (import.meta.env.VITE_BILLING_DISABLED as string | undefined) === "true";
-const TRIAL_DAYS = 30;
-// This versioned key starts a fresh 30-day trial for the current test/release build.
-// A production store release should move entitlement enforcement to the store/backend.
-const TRIAL_MS = TRIAL_DAYS * 24 * 60 * 60 * 1000;
-const TRIAL_STARTED_KEY = "sai-sai-trial-started-at-v3";
+const BAZAAR_PRODUCT_ID = "Saysay110";
 
-function getTrialStartedAt(): number {
-  const stored = Number(localStorage.getItem(TRIAL_STARTED_KEY));
-  if (Number.isFinite(stored) && stored > 0) return stored;
-  const now = Date.now();
-  localStorage.setItem(TRIAL_STARTED_KEY, String(now));
-  return now;
-}
-
-function getLocalTrialSubscription(): Subscription {
-  const startedAt = getTrialStartedAt();
-  const expiresAt = startedAt + TRIAL_MS;
-  return Date.now() < expiresAt
-    ? { status: "active", plan: "monthly", expiresAt, provider: "web", isTrial: true }
-    : { status: "expired", plan: "none", expiresAt, provider: "web", isTrial: true };
-}
-
-export async function getSubscription(): Promise<Subscription> {
-  if (BILLING_DISABLED) return getLocalTrialSubscription();
-  // Without a configured billing server, every fresh installation gets a 30-day local trial.
-  // Once the trial ends, the normal subscription paywall is shown.
-  if (!API_BASE) return getLocalTrialSubscription();
-
-  const response = await fetch(`${API_BASE}/subscription/status`, {
-    credentials: "include",
-    headers: { Accept: "application/json" },
-  });
-  if (!response.ok) throw new Error("وضعیت اشتراک دریافت نشد");
-  return response.json() as Promise<Subscription>;
+async function requireSignedInUser(): Promise<void> {
+  if (!supabase) throw new Error("اتصال حساب کاربری تنظیم نشده است");
+  const { data, error } = await supabase.auth.getSession();
+  if (error || !data.session) throw new Error("برای مدیریت اشتراک ابتدا وارد حساب سای‌سای شوید");
 }
 
 /**
- * Web/PWA checkout. The server decides the amount and provider.
- * Never put gateway secrets in the frontend.
+ * Subscription state is authoritative on the Supabase backend.
+ * Do not fall back to a device-local trial: it can be reset by reinstalling
+ * and must not be confused with a verified store subscription.
+ */
+export async function getSubscription(): Promise<Subscription> {
+  await requireSignedInUser();
+  const { data, error } = await supabase!.functions.invoke("subscription-status", {
+    method: "GET",
+  });
+  if (error) throw new Error("وضعیت اشتراک از سرور دریافت نشد");
+  if (!data || typeof data !== "object" || !("status" in data)) {
+    throw new Error("پاسخ وضعیت اشتراک معتبر نیست");
+  }
+  return data as Subscription;
+}
+
+/**
+ * Bazaar billing must be started by the native Android billing bridge.
+ * A web checkout URL is intentionally not substituted for a Bazaar purchase.
  */
 export async function createMonthlyCheckout(): Promise<string> {
-  if (!API_BASE) throw new Error("سرویس اشتراک هنوز به سرور سایار متصل نشده است");
-
-  const response = await fetch(`${API_BASE}/subscription/checkout`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({ plan: "monthly", provider: "web" }),
-  });
-
-  if (!response.ok) throw new Error("ایجاد پرداخت ناموفق بود");
-  const data = (await response.json()) as { checkoutUrl?: string };
-  if (!data.checkoutUrl) throw new Error("لینک پرداخت معتبر دریافت نشد");
-  return data.checkoutUrl;
+  throw new Error("اتصال خرید کافه‌بازار به نسخه اندروید هنوز کامل نشده است");
 }
 
-/**
- * Bazaar/Myket purchase verification.
- * The native Android layer obtains the purchase token from the store SDK,
- * then sends only the token + product id to our backend.
- * The backend verifies the token with the store and grants the entitlement.
- */
+/** Send the native Bazaar purchase token to the authenticated verification function. */
 export async function verifyStorePurchase(purchase: StorePurchase): Promise<Subscription> {
-  if (!API_BASE) throw new Error("سرویس اشتراک هنوز به سرور سایار متصل نشده است");
-
-  const response = await fetch(`${API_BASE}/subscription/store/verify`, {
+  await requireSignedInUser();
+  if (purchase.provider !== "bazaar") {
+    throw new Error("در حال حاضر فقط تأیید خرید کافه‌بازار پشتیبانی می‌شود");
+  }
+  if (purchase.productId !== BAZAAR_PRODUCT_ID || purchase.purchaseToken.trim().length < 8) {
+    throw new Error("اطلاعات خرید کافه‌بازار معتبر نیست");
+  }
+  const { data, error } = await supabase!.functions.invoke("verify-bazaar-purchase", {
     method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify(purchase),
+    body: { productId: purchase.productId, purchaseToken: purchase.purchaseToken },
   });
-
-  if (!response.ok) throw new Error("تأیید خرید فروشگاه ناموفق بود");
-  return response.json() as Promise<Subscription>;
+  if (error) throw new Error("تأیید خرید کافه‌بازار ناموفق بود");
+  if (!data || data.status !== "active" || !Number.isFinite(Number(data.expiresAt))) {
+    throw new Error(typeof data?.error === "string" ? data.error : "سرور خرید را تأیید نکرد");
+  }
+  return data as Subscription;
 }
