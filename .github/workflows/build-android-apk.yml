@@ -47,26 +47,26 @@ jobs:
           settings = Path("android/settings.gradle")
           source = settings.read_text() if settings.exists() else ""
 
-          # Prefer the centralized dependency repositories when this Gradle template has them.
+          # Prefer centralized dependency repositories when this Gradle template has them.
           if "dependencyResolutionManagement" in source:
               start = source.index("dependencyResolutionManagement")
-              match = re.search(r'repositories\\s*\\{', source[start:])
+              match = re.search(r'repositories\s*\{', source[start:])
               if not match:
                   raise SystemExit("dependencyResolutionManagement exists but has no repositories block")
               pos = start + match.end()
               if jitpack not in source:
-                  source = source[:pos] + "\\n        " + jitpack + source[pos:]
+                  source = source[:pos] + "\n        " + jitpack + source[pos:]
                   settings.write_text(source)
           else:
               # Older Capacitor templates keep dependency repositories in the root build.gradle.
               root = Path("android/build.gradle")
               root_source = root.read_text() if root.exists() else ""
               if jitpack not in root_source:
-                  match = re.search(r'(allprojects\\s*\\{[\\s\\S]*?repositories\\s*\\{)', root_source)
+                  match = re.search(r'(allprojects\s*\{[\s\S]*?repositories\s*\{)', root_source)
                   if match:
-                      root_source = root_source[:match.end()] + "\\n        " + jitpack + root_source[match.end():]
+                      root_source = root_source[:match.end()] + "\n        " + jitpack + root_source[match.end():]
                   else:
-                      root_source += "\\n\\nallprojects {\\n    repositories {\\n        " + jitpack + "\\n    }\\n}\\n"
+                      root_source += "\n\nallprojects {\n    repositories {\n        " + jitpack + "\n    }\n}\n"
                   root.write_text(root_source)
 
           print("JitPack repository configured for the generated Android project.")
