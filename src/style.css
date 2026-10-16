@@ -976,3 +976,365 @@ body{background:#fff8fa}
 .invoice-backdrop {
   background: rgba(166, 220, 242, 0.72) !important;
 }
+
+
+/* =========================================================
+   SaySay — Lavender visual redesign
+   Applies the approved light-lavender reference across the app.
+   Functional/layout selectors are intentionally preserved.
+   ========================================================= */
+:root{
+  color-scheme:light;
+  --bg:#fbfaff;
+  --bg-soft:#f6f3ff;
+  --surface:#ffffff;
+  --surface-2:#f8f6ff;
+  --surface-3:#f0ecff;
+  --border:#d9d3f2;
+  --text:#17254a;
+  --muted:#73758a;
+  --accent:#6426d9;
+  --accent-soft:#eee8ff;
+  --success:#1f9d72;
+  --warning:#c58a19;
+  --danger:#d6455d;
+  font-family:'Vazirmatn',Tahoma,Arial,sans-serif;
+  color:#17254a;
+  background:#fbfaff;
+}
+html,body,#app{background:#fbfaff;color:#17254a}
+body{
+  background:linear-gradient(180deg,#fbfaff 0%,#faf9ff 58%,#f6f9ff 100%);
+  color:#17254a;
+}
+.shell{background:transparent}
+.topbar h1{color:#17254a}
+.eyebrow{color:#74758a}
+.muted{color:#77788b}
+.header-actions{color:#17254a}
+.icon-button{
+  background:#fff;
+  color:#17254a;
+  border-color:#ded9f3;
+  box-shadow:0 3px 12px rgba(74,54,132,.05);
+}
+.plan-pill{
+  color:#4f4668;
+  border-color:#ded9f3;
+  background:#fff;
+}
+.plan-pill.active{
+  color:#6426d9;
+  border-color:#cfc4f7;
+  background:#f0eaff;
+}
+.header-currency{color:#74758a}
+.header-currency select{
+  background:#fff;
+  color:#17254a;
+  border-color:#ded9f3;
+}
+.header-currency select:focus{outline-color:#bba9f2}
+
+.hero{
+  background:linear-gradient(135deg,#ffffff 0%,#fbf9ff 100%);
+  border-color:#ddd8f2;
+  box-shadow:0 14px 38px rgba(77,58,133,.08);
+}
+.hero h2{color:#17254a}
+.hero-kicker{color:#6844c8}
+.hero-mark{
+  background:linear-gradient(145deg,#8d6be8,#6426d9);
+  box-shadow:0 10px 28px rgba(100,38,217,.22);
+}
+.subscription-card{
+  background:#fbfaff;
+  border-color:#ddd8f2;
+}
+.primary-button{
+  background:linear-gradient(135deg,#6d35d9,#5a20c8);
+  color:#fff;
+  box-shadow:0 8px 20px rgba(100,38,217,.18);
+}
+.primary-button:hover{background:linear-gradient(135deg,#7846df,#6426d9)}
+
+.panel,.stat-card,.quick-card{
+  background:#fff;
+  border-color:#cfd9ef;
+  color:#17254a;
+  box-shadow:none;
+}
+.panel{box-shadow:0 8px 26px rgba(77,58,133,.045)}
+.stat-card span{color:#74758a}
+.stat-card.primary{border-color:#c9bdf0}
+.stat-card.success{border-color:#bfe6d7}
+.stat-card.warning{border-color:#ead9ae}
+.stat-card.danger{border-color:#efc4cc}
+.stat-card.primary strong{color:#6426d9}
+.stat-card.success strong{color:#1f9d72}
+.stat-card.warning strong{color:#c58a19}
+.stat-card.danger strong{color:#d6455d}
+
+.quick-card{
+  color:#17254a;
+  border-color:#cfd9ef;
+}
+.quick-card:hover,.quick-card:focus{
+  background:#f5f0ff;
+  border-color:#bfaeea;
+}
+.quick-card:active{background:#eee8ff}
+.quick-card b{
+  background:#f0b1c8;
+  color:#5a2948;
+}
+.quick-card span{color:#17254a}
+
+.empty-inline{color:#6f7185}
+.transaction-row,.product-row,.person-row,.report-list>div{
+  border-color:#ece8f7;
+}
+.transaction-icon{
+  background:#eee8ff;
+  color:#6426d9;
+}
+.transaction-main small,.product-row small,.stock-number small{color:#85869a}
+.transaction-row>b,.product-row>b{color:#17254a}
+.stock-number.low{color:#d6455d}
+.locked-panel>div{color:#6426d9}
+
+.bottom-nav{
+  background:rgba(255,255,255,.94);
+  border-color:#ded9f0;
+  box-shadow:0 12px 38px rgba(63,47,105,.12);
+  backdrop-filter:blur(18px);
+}
+.nav-item{color:#777789}
+.nav-item.active{
+  color:#6426d9;
+  background:#eee8ff;
+}
+.nav-item span{color:inherit}
+
+.toast{
+  background:#fff;
+  color:#17254a;
+  border-color:#d9d3f2;
+  box-shadow:0 10px 30px rgba(63,47,105,.12);
+}
+.modal-backdrop{background:rgba(43,32,75,.34)}
+.modal{
+  background:#fff;
+  color:#17254a;
+  border-color:#ddd8f2;
+  box-shadow:0 30px 80px rgba(43,32,75,.18);
+}
+.modal-close{
+  background:#f0ecff;
+  color:#4d3b76;
+}
+.price-card{
+  background:#fff;
+  border-color:#ddd8f2;
+}
+.price-card span{color:#77788b}
+
+.paywall-logo{
+  background:linear-gradient(145deg,#8d6be8,#6426d9);
+  box-shadow:0 18px 40px rgba(100,38,217,.2);
+}
+.subscription-expiry{color:#6426d9}
+.paywall-features span{
+  background:#fff;
+  border-color:#ddd8f2;
+  color:#17254a;
+}
+.paywall small{color:#77788b}
+
+.field span{color:#74758a}
+.field input,.field select,.sale-summary{
+  background:#fff;
+  color:#17254a;
+  border-color:#d9d3f2;
+}
+.field input:focus,.field select:focus{
+  border-color:#a992e8;
+  box-shadow:0 0 0 3px rgba(100,38,217,.09);
+}
+.sale-summary{border-color:#d9d3f2}
+.sale-summary strong{color:#6426d9}
+
+.person-avatar{
+  background:linear-gradient(145deg,#8d6be8,#6426d9);
+  color:#fff;
+}
+.person-row small{color:#85869a}
+.report-list span{color:#77788b}
+
+.secondary-button{
+  background:#fff;
+  color:#17254a;
+  border-color:#d9d3f2;
+}
+.secondary-button:hover{
+  background:#f5f0ff;
+  border-color:#c4b4ee;
+}
+
+.ledger-balance,.ledger-row{
+  background:#f6f3ff;
+}
+.report-filter{
+  background:#fff;
+  color:#17254a;
+  border-color:#d9d3f2;
+}
+
+.product-profit-row{
+  background:#fff;
+  border-color:#d9d3f2;
+}
+.trend-bars i{background:#6426d9}
+.trend-bars b{background:#1f9d72}
+
+.professional-toggle{
+  background:#fff;
+  border-color:#d9d3f2;
+}
+.account-card{
+  background:#fff;
+  border-color:#d9d3f2;
+  color:#17254a;
+}
+.account-icon{background:#f0ecff}
+
+.invoice-modal{
+  background:#fbfaff!important;
+  color:#17254a!important;
+  border-color:#ddd8f2!important;
+}
+.invoice-cover{
+  background:linear-gradient(135deg,#6d35d9,#6426d9 58%,#8d6be8);
+}
+.invoice-party-card>div,.invoice-summary>div{
+  background:#fff;
+  border-color:#ddd8f2;
+}
+.invoice-party-card span,.invoice-summary span{color:#77788b}
+.invoice-party-card strong,.invoice-summary b{color:#17254a}
+.invoice-section-title{color:#5b35b5}
+.invoice-table-wrap{border-color:#ddd8f2}
+.invoice-table th{
+  background:#f0ecff;
+  color:#4d328f;
+  border-color:#ddd8f2;
+}
+.invoice-table td{
+  color:#34415f;
+  border-color:#eeeaf6;
+}
+.invoice-table tbody tr:nth-child(even){background:#fbfaff}
+.invoice-summary .invoice-balance{
+  background:#edf9f4;
+  border-color:#bfe6d7;
+}
+.invoice-summary .invoice-balance b{color:#1f9d72}
+.invoice-actions-footer{
+  background:#fbfaff;
+  border-color:#ddd8f2;
+}
+
+.order-card{
+  background:#fff;
+  border-color:#d9d3f2;
+  color:#17254a;
+}
+.order-status{
+  background:#eee8ff;
+  color:#5b35b5;
+}
+.order-card.completed .order-status{
+  background:#e8f7f1;
+  color:#187c5c;
+}
+.order-card.cancelled .order-status{
+  background:#fff0f2;
+  color:#b8324a;
+}
+.order-details{color:#77788b}
+.order-details span{background:#f6f3ff}
+.order-details b{color:#17254a}
+
+.invoice-unsettled{
+  background:#fff0f2;
+  color:#b8324a!important;
+  border-color:#efb9c3;
+}
+.debtor-icon{background:#fff0f2!important;color:#d6455d!important}
+.debtor-amount{color:#d6455d!important}
+.debtor-invoices .secondary-button{
+  border-color:#efc4cc;
+  color:#b8324a;
+  background:#fff7f8;
+}
+
+.report-change-range{
+  background:#eee8ff;
+  color:#5b35b5;
+  border-color:#cfc4f7;
+  box-shadow:0 6px 22px rgba(100,38,217,.12);
+}
+.report-range button{
+  background:#f0ecff!important;
+  border-color:#cfc4f7!important;
+  color:#4d328f!important;
+  -webkit-text-fill-color:#4d328f!important;
+}
+.report-range button span{
+  color:#4d328f!important;
+  -webkit-text-fill-color:#4d328f!important;
+}
+.report-range button:hover,.report-range button:focus,.report-range button:active{
+  background:#e7deff!important;
+  border-color:#a992e8!important;
+  color:#3f277e!important;
+  -webkit-text-fill-color:#3f277e!important;
+}
+.report-date-parts{
+  background:#fff!important;
+  border-color:#d9d3f2;
+}
+.report-date-parts input{
+  color:#17254a!important;
+  -webkit-text-fill-color:#17254a!important;
+}
+.report-date-separator{color:#77708d!important}
+
+#product-modal .modal,#check-modal .modal,#sale-modal .modal,#order-modal>.modal{
+  background:#fff;
+  color:#17254a;
+}
+#product-modal #product-submit,#check-modal #check-submit{
+  box-shadow:0 -8px 18px rgba(255,255,255,.9);
+}
+#sale-modal [data-sale-line]{
+  background:#fff;
+  border-color:#d9d3f2;
+}
+#sale-modal #sale-submit{
+  box-shadow:0 0 0 8px #fff,0 8px 22px rgba(63,47,105,.1);
+}
+.offline-calc-keys button{
+  background:#f0ecff;
+  border-color:#d2c7f4;
+  color:#4d328f;
+}
+.offline-calc-keys button:active{background:#d9cbff}
+.offline-calc-keys #calc-evaluate{
+  background:#6426d9;
+  border-color:#6426d9;
+  color:#fff;
+}
+.invoice-brand-logo,.brand-logo{
+  box-shadow:0 8px 22px rgba(63,47,105,.12);
+}
