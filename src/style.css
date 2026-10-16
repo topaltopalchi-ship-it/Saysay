@@ -908,3 +908,63 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 .auth-modal, .auth-modal h2, .auth-modal label { color: #202522; }
 .auth-modal .auth-recover-link { color: #126b56 !important; }
+
+
+/* SaySay light blush + navy theme refresh */
+:root{
+  color-scheme:light;
+  --say-pink:#f4b8c8;
+  --say-pink-soft:#fff3f6;
+  --say-pink-pale:#fff8fa;
+  --say-navy:#182744;
+  --say-navy-soft:#344765;
+  --say-border:#eadde3;
+  --say-muted:#716773;
+  color:var(--say-navy);
+  background:#fff8fa;
+}
+html,body,#app{background:#fff8fa;color:var(--say-navy)}
+body{background:#fff8fa}
+.eyebrow,.muted,.field span,.stat-card span,.transaction-main small,.product-row small,.stock-number small,.page-head-row .muted{color:var(--say-muted)}
+.topbar h1,.hero h2,.section-head h3,.page-head h2,.modal h2,.paywall h2{color:var(--say-navy)}
+.icon-button{border-color:var(--say-border);background:#fff;color:var(--say-navy)}
+.plan-pill{border-color:var(--say-border);color:var(--say-muted)}
+.plan-pill.active{color:var(--say-navy);border-color:var(--say-pink);background:var(--say-pink-soft)}
+.header-currency select{border-color:var(--say-border);background:#fff;color:var(--say-navy)}
+.header-currency select:focus{outline-color:var(--say-pink)}
+.hero{border-color:var(--say-border);background:linear-gradient(135deg,#fff,#fff8fa);box-shadow:0 14px 38px #1827440b}
+.hero-kicker{color:var(--say-navy-soft)}
+.hero-mark{background:linear-gradient(145deg,#f4b8c8,#fbe0e7);color:var(--say-navy);box-shadow:0 8px 22px #f4b8c833}
+.subscription-card{border-color:var(--say-border);background:linear-gradient(135deg,#fff0f4,#fff9fb)}
+.primary-button{background:var(--say-pink);color:var(--say-navy);box-shadow:0 6px 16px #d68fa333}
+.primary-button:active{background:#eda8bc}
+.stat-card{border-color:var(--say-border);background:#fff}
+.stat-card.primary strong,.stat-card.success strong{color:var(--say-navy-soft)}
+.quick-card{border-color:var(--say-border);background:#fff;color:var(--say-navy)}
+.quick-card:active{background:var(--say-pink-soft)}
+.quick-card b{background:var(--say-pink);color:var(--say-navy)}
+.panel{border-color:var(--say-border);background:#fff}
+.transaction-row,.product-row,.person-row{border-bottom-color:#f1e8ec}
+.transaction-icon,.nav-item.active{background:var(--say-pink-soft);color:var(--say-navy)}
+.bottom-nav{border-color:var(--say-border);background:#fffFfF2;box-shadow:0 12px 34px #18274412}
+.nav-item{color:#817682}
+.toast{border-color:var(--say-border);background:#fff;color:var(--say-navy)}
+.modal-backdrop{background:#18274466}
+.modal{border-color:var(--say-border);background:#fff;box-shadow:0 28px 70px #18274422}
+.modal-close{background:var(--say-pink-soft);color:var(--say-navy)}
+.price-card{border-color:var(--say-border);background:#fff}
+.price-card span{color:var(--say-muted)}
+.paywall-logo{background:linear-gradient(145deg,#f4b8c8,#fbe0e7);color:var(--say-navy);box-shadow:0 14px 34px #d68fa333}
+.paywall-features span{border-color:var(--say-border);background:#fff;color:var(--say-navy)}
+.subscription-expiry,.sale-summary strong{color:var(--say-navy-soft)}
+.field input,.field select{border-color:var(--say-border);background:#fff;color:var(--say-navy)}
+.field input::placeholder{color:#a49aa3}
+.field input:focus,.field select:focus{border-color:var(--say-pink);box-shadow:0 0 0 3px #f4b8c826}
+.sale-summary{border-color:var(--say-border);background:var(--say-pink-soft)}
+.person-avatar{background:linear-gradient(145deg,#f4b8c8,#e9a9bc);color:var(--say-navy)}
+.ledger-balance{background:var(--say-pink-soft)}
+.ledger-row{background:#fff8fa}
+.report-filter{border-color:var(--say-border);background:#fff;color:var(--say-navy)}
+.report-date input{border-color:var(--say-border);background:#fff;color:var(--say-navy)}
+.product-profit-row{border-color:var(--say-border);background:#fff}
+.report-range button{background-color:var(--say-navy)!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
