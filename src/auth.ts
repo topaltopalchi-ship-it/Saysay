@@ -105,7 +105,7 @@ export function authScreen(onSuccess: () => void): void {
         ? "حساب بسازید و ۳۰ روز رایگان از سای‌سای استفاده کنید."
         : "نام کاربری، کد بازیابی و رمز جدید را وارد کنید.";
     passwordInput.autocomplete = mode === "login" ? "current-password" : "new-password";
-    submit.textContent = mode === "login" ? "ورود سریع" : mode === "signup" ? "ساخت حساب" : "تغییر رمز";
+    submit.textContent = mode === "login" ? "ورود به حساب" : mode === "signup" ? "ساخت حساب" : "تغییر رمز";
     wrapper.querySelector<HTMLButtonElement>("#auth-switch")!.textContent = mode === "login" ? "ساخت حساب جدید" : "قبلاً حساب ساخته‌ام؛ ورود";
     showError("");
   };
@@ -184,13 +184,15 @@ export function authScreen(onSuccess: () => void): void {
       }
       const { data } = await supabase!.auth.getSession();
       if (!data.session) throw new Error("نشست امن ایجاد نشد؛ دوباره وارد شوید.");
+      localStorage.setItem("sai-sai-account-username", username);
+      localStorage.setItem("sai-sai-auth-method", "username-password");
       wrapper.remove();
       onSuccess();
     } catch (e) {
       showError(e instanceof Error ? e.message : "ارتباط با سرویس حساب کاربری ناموفق بود.");
     } finally {
       submit.disabled = false;
-      submit.textContent = mode === "login" ? "ورود" : mode === "signup" ? "ساخت حساب" : "تغییر رمز";
+      submit.textContent = mode === "login" ? "ورود به حساب" : mode === "signup" ? "ساخت حساب" : "تغییر رمز";
     }
   });
 
@@ -209,7 +211,7 @@ export function welcomeScreen(onGuest: () => void, onAccount: () => void): void 
     <h2>به سای‌سای خوش آمدی</h2>
     <p class="muted">حساب‌وکتابت رو ساده شروع کن. بدون ثبت‌نام، امکانات برنامه رو ببین.</p>
     <button id="welcome-guest" class="primary-button wide" type="button">شروع سریع بدون حساب</button>
-    <button id="welcome-account" class="secondary-button wide" type="button">⚡ ورود سریع به حساب</button>
+    <button id="welcome-account" class="secondary-button wide" type="button">ورود / ساخت حساب</button>
     <p class="auth-footnote">اطلاعات کاری روی همین گوشی ذخیره می‌شود. برای جلوگیری از دست رفتن اطلاعات، مرتب نسخه پشتیبان بگیر.</p>
   </section>`;
   document.body.appendChild(wrapper);
