@@ -773,3 +773,138 @@ button,input,select,textarea{font-family:'Vazirmatn',Tahoma,Arial,sans-serif}
 .paywall-features span{background:#f6faf7;color:#34423b;border-color:#dce7e1}
 .field span,.stat-card span,.transaction-main small,.product-row small{color:#65736c}
 .field input:focus,.field select:focus{border-color:#13866b;outline-color:#13866b}
+
+
+/* Global readability patch: enforce the light SAI SAI palette on every screen and modal. */
+:root {
+  color-scheme: light;
+  --bg: #f8fbf9;
+  --bg-soft: #f1f8f4;
+  --surface: #ffffff;
+  --surface-2: #f3f7f5;
+  --surface-3: #e8f2ed;
+  --border: #dce7e1;
+  --text: #202522;
+  --muted: #65736c;
+  --accent: #13866b;
+  --accent-soft: #e6f5ee;
+  --success: #13866b;
+  --warning: #9a6700;
+  --danger: #b42332;
+}
+html, body, #app { color: #202522; }
+body { background: #f8fbf9 !important; color: #202522 !important; }
+.shell, .section, .page-head, .section-head { color: #202522; }
+h1, h2, h3, h4, p, label, strong, b, li { text-shadow: none; }
+.muted, .eyebrow, .field span, .report-list span { color: #65736c; }
+.panel, .stat-card, .quick-card, .modal, .price-card, .sale-summary,
+.subscription-card, .hero, .professional-toggle, .account-card, .order-card,
+.ledger-balance, .ledger-row, .secretary-modal {
+  color: #202522;
+}
+.panel, .stat-card, .quick-card, .modal, .price-card, .sale-summary,
+.account-card, .order-card {
+  background: #ffffff !important;
+  border-color: #dce7e1 !important;
+}
+.header-currency select,
+.field input, .field select, .secretary-form input, #secretary-input,
+.report-date input, #calc-input, textarea, input:not([type="checkbox"]):not([type="radio"]), select {
+  color: #202522;
+  -webkit-text-fill-color: #202522;
+  background-color: #ffffff;
+  border-color: #cbded3;
+  caret-color: #13866b;
+}
+input::placeholder, textarea::placeholder,
+#secretary-input::placeholder {
+  color: #7a8981 !important;
+  -webkit-text-fill-color: #7a8981 !important;
+  opacity: 1 !important;
+}
+.header-currency select { color: #202522 !important; -webkit-text-fill-color: #202522 !important; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid #13866b;
+  outline-offset: 2px;
+}
+.quick-card:active, .quick-card:hover { background: #f0f8f4 !important; color: #202522 !important; }
+.nav-item.active { background: #e6f5ee !important; color: #13866b !important; }
+.report-range button, .report-range button span {
+  background: #ffffff !important;
+  color: #202522 !important;
+  -webkit-text-fill-color: #202522 !important;
+  border-color: #cbded3 !important;
+}
+.report-range button:hover, .report-range button:focus {
+  background: #e6f5ee !important;
+  color: #126b56 !important;
+  -webkit-text-fill-color: #126b56 !important;
+  border-color: #13866b !important;
+}
+.report-change-range {
+  background: #13866b !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border-color: #13866b !important;
+}
+.account-card { background: #ffffff !important; color: #202522 !important; }
+.account-icon { background: #e6f5ee !important; color: #13866b !important; }
+.order-card { background: #ffffff !important; color: #202522 !important; }
+.order-details { color: #65736c !important; }
+.order-details span { background: #f3f7f5 !important; color: #34423b !important; }
+.order-details b { color: #202522 !important; }
+.order-status { background: #e6f5ee !important; color: #126b56 !important; }
+.order-card.completed .order-status { background: #e6f5ee !important; color: #126b56 !important; }
+.order-card.cancelled .order-status { background: #fdebec !important; color: #b42332 !important; }
+.invoice-modal { background: #ffffff !important; color: #202522 !important; }
+.invoice-modal .modal-close { color: #23406b !important; }
+.offline-calc-keys button {
+  background: #e6f5ee !important;
+  color: #202522 !important;
+  -webkit-text-fill-color: #202522 !important;
+  border-color: #cbded3 !important;
+}
+.offline-calc-keys #calc-evaluate,
+.offline-calc-keys button:active {
+  background: #13866b !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+#secretary-modal .secretary-modal {
+  background: #ffffff !important;
+  color: #202522 !important;
+  border-color: #dce7e1 !important;
+}
+#secretary-modal .secretary-messages {
+  background: #f8fbf9 !important;
+  border-color: #dce7e1 !important;
+}
+#secretary-modal .secretary-message.assistant {
+  background: #ffffff !important;
+  color: #202522 !important;
+  border-color: #dce7e1 !important;
+}
+#secretary-modal .secretary-message.user {
+  background: #13866b !important;
+  color: #ffffff !important;
+}
+#secretary-modal #secretary-input {
+  background: #ffffff !important;
+  color: #202522 !important;
+  -webkit-text-fill-color: #202522 !important;
+  border-color: #cbded3 !important;
+}
+#secretary-modal #secretary-input::placeholder {
+  color: #7a8981 !important;
+  -webkit-text-fill-color: #7a8981 !important;
+}
+#secretary-modal .secretary-modal > .muted,
+#secretary-modal .secretary-modal > small { color: #65736c !important; }
+#secretary-modal #secretary-mic,
+#secretary-modal .secretary-form button {
+  color: #ffffff !important;
+  background: #13866b !important;
+  border-color: #13866b !important;
+}
+.auth-modal, .auth-modal h2, .auth-modal label { color: #202522; }
+.auth-modal .auth-recover-link { color: #126b56 !important; }
