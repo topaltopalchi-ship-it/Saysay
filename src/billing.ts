@@ -49,7 +49,7 @@ export async function getSubscription(): Promise<Subscription> {
  * A web checkout URL is intentionally not substituted for a Bazaar purchase.
  */
 export async function createMonthlyCheckout(): Promise<string> {
-  throw new Error("اتصال خرید کافه‌بازار به نسخه اندروید هنوز کامل نشده است");
+  throw new Error("پرداخت هنوز به درگاه واقعی متصل نشده است. خرید کافه‌بازار به پل بومی اندروید و تنظیمات حساب توسعه‌دهنده نیاز دارد.");
 }
 
 /** Send the native Bazaar purchase token to the authenticated verification function. */
