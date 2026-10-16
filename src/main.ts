@@ -59,6 +59,11 @@ const dateTime = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
   year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit"
 });
 let activeTab: Tab = "dashboard";
+let activeSubscription: Subscription | null = null;
+function isPaidSubscription(): boolean { return activeSubscription?.status === "active" && activeSubscription.isTrial !== true; }
+function premiumFeatureNotice(feature: string): void {
+  showToast(`${feature} در نسخه رایگان محدود است؛ برای دسترسی کامل، اشتراک سای‌سای را فعال کنید.`);
+}
 const UI_MODE_KEY = "sai-sai-ui-mode";
 function isProfessionalMode(): boolean { return localStorage.getItem(UI_MODE_KEY) === "professional"; }
 function setProfessionalMode(value: boolean): void { localStorage.setItem(UI_MODE_KEY, value ? "professional" : "simple"); }
@@ -357,7 +362,7 @@ function layout(content: string, subscription: Subscription): void {
       </header>
       <div id="view">${content}</div>
       <nav class="bottom-nav" aria-label="ناوبری اصلی">
-        ${navItems.filter(([id]) => isProfessionalMode() || (id !== "reports" && id !== "more" && id !== "checks")).map(([id,label,icon]) => `<button class="nav-item ${activeTab === id ? "active" : ""}" data-nav="${id}"><span>${icon}</span><small>${label}</small></button>`).join("")}
+        ${navItems.filter(([id]) => (isProfessionalMode() || (id !== "reports" && id !== "more" && id !== "checks")) && (id !== "reports" || isPaidSubscription() || !isProfessionalMode()).map(([id,label,icon]) => `<button class="nav-item ${activeTab === id ? "active" : ""}" data-nav="${id}"><span>${icon}</span><small>${label}</small></button>`).join("")}
       </nav>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </main>`;
@@ -380,7 +385,7 @@ async function dashboardView(subscription: Subscription): Promise<string> {
     getLowStockItems(), listParties(), listTransactions(), listProducts(), listParties(), listExpenses()
   ]);
   const insights = await buildBusinessInsights(allProducts, allParties, tx, expenses);
-  const brief = dailyBrief(insights);
+  const brief = subscription.isTrial ? "ماشین‌حساب، منشی صوتی و ثبت فروش با صدا در نسخه رایگان فعال‌اند." : dailyBrief(insights);
   const insightHtml = insights.slice(0, 6).map((x: BusinessInsight) =>
     '<div class="transaction-row"><div class="transaction-icon">' + (x.tone === "danger" ? "!" : x.tone === "warning" ? "⚠" : x.tone === "success" ? "↑" : "💡") + '</div><div class="transaction-main"><strong>' + x.title + '</strong><small>' + x.text + '</small></div>' + (x.action ? '<button type="button" class="secondary-button insight-action" data-insight-id="' + x.id + '">' + x.action + '</button>' : '') + '</div>'
   ).join("");
@@ -392,14 +397,13 @@ async function dashboardView(subscription: Subscription): Promise<string> {
     lowStockHtml +
     '<section class="stats-grid">' + stat("فروش امروز", rial(d.salesToday), "primary") + stat("دریافت امروز", rial(d.receiptsToday), "success") +
     (isProfessionalMode() ? stat("مطالبات", rial(d.receivables), "warning") + stat("موجودی کم", money.format(d.lowStock) + " کالا", "danger") : "") + '</section>' +
-    '<section class="panel"><div class="section-head"><div><h3>🧠 مغز سای‌سای</h3><span class="muted">سای‌سای به‌جای نمایش عدد، تصمیم پیشنهادی می‌دهد.</span></div><strong>' + money.format(insights.length) + ' نکته</strong></div>' +
-    (insightHtml || '<div class="empty-inline"><p>فعلاً نکته مهمی پیدا نشد.</p></div>') + '</section>' +
+    (subscription.isTrial ? '<section class="panel"><div class="section-head"><div><h3>🧠 تحلیل هوشمند پیشرفته</h3><span class="muted">تحلیل کامل کسب‌وکار و پیشنهادهای هوشمند در اشتراک پولی فعال می‌شود.</span></div></div><button class="secondary-button wide" data-action="premium-insights">مشاهده امکانات اشتراک</button></section>' : '<section class="panel"><div class="section-head"><div><h3>🧠 مغز سای‌سای</h3><span class="muted">سای‌سای به‌جای نمایش عدد، تصمیم پیشنهادی می‌دهد.</span></div><strong>' + money.format(insights.length) + ' نکته</strong></div>' + (insightHtml || '<div class="empty-inline"><p>فعلاً نکته مهمی پیدا نشد.</p></div>') + '</section>') +
     '<section class="section"><div class="section-head"><h3>✈️ امروز چه کار کنم؟</h3><span class="muted">مدیریت هوشمند</span></div><div class="quick-grid">' +
-    '<button class="quick-card" data-action="daily-brief"><b>🧠</b><span>گزارش امروز</span><small>اولویت‌های کسب‌وکار</small></button>' +
+    (subscription.isTrial ? '<button class="quick-card" data-action="premium-insights"><b>🔒</b><span>گزارش هوشمند</span><small>ویژه اشتراک پولی</small></button>' : '<button class="quick-card" data-action="daily-brief"><b>🧠</b><span>گزارش امروز</span><small>اولویت‌های کسب‌وکار</small></button>') +
     '<button class="quick-card" data-action="sale"><b>＋</b><span>فروش جدید</span><small>ثبت سریع فاکتور</small></button>' +
     '<button class="quick-card" data-action="purchase"><b>⇩</b><span>ثبت خرید</span><small>افزایش موجودی</small></button>' +
     '<button class="quick-card" data-action="receipt"><b>↙</b><span>دریافت وجه</span><small>پیگیری مطالبات</small></button>' +
-    '<button class="quick-card" data-action="market-prices"><b>💱</b><span>قیمت‌های بازار</span><small>نمایش دلار، طلا و شاخص‌ها</small></button>' +
+    (subscription.isTrial ? '<button class="quick-card" data-action="premium-market"><b>🔒</b><span>قیمت‌های هوشمند بازار</span><small>ویژه اشتراک پولی</small></button>' : '<button class="quick-card" data-action="market-prices"><b>💱</b><span>قیمت‌های بازار</span><small>نمایش دلار، طلا و شاخص‌ها</small></button>') +
     '<button class="quick-card voice-quick-card" id="voice-sale"><b>🎙</b><span>ثبت فروش با صدا</span><small>فارسی صحبت کنید</small></button>' +
     '<button class="quick-card voice-quick-card" id="voice-query"><b>🔊</b><span>از سای‌سای بپرس</span><small>فروش، قیمت، موجودی</small></button>' +
     '</div></section>' +
@@ -1518,12 +1522,14 @@ async function bindActions(): Promise<void> {
     if (!actionButton) return;
     const action = actionButton.dataset.action;
     try {
-      if (action === "sale") await openSaleModal();
+      if (action === "premium-insights" || action === "premium-market") { premiumFeatureNotice(action === "premium-market" ? "قیمت‌های هوشمند بازار و تحلیل دلار و طلا" : "گزارش‌ها و تحلیل هوشمند"); }
+      else if (action === "sale") await openSaleModal();
       else if (action === "purchase") {
         products = await listProducts();
         parties = await listParties();
         openPurchaseModal(products, parties, rial, async m => { showToast(m); await render(); });
       } else if (action === "market-prices") {
+        if (!isPaidSubscription()) { premiumFeatureNotice("قیمت‌های زنده بازار"); return; }
         document.body.insertAdjacentHTML("beforeend", marketPricesModal());
         bindMarketPricesModal();
       } else if (action === "receipt") {
@@ -1534,6 +1540,7 @@ async function bindActions(): Promise<void> {
         document.body.insertAdjacentHTML("beforeend", expenseModal());
         bindExpenseModal();
       } else if (action === "daily-brief") {
+        if (!isPaidSubscription()) { premiumFeatureNotice("گزارش هوشمند روزانه"); return; }
         const [ps, pts, es, prods] = await Promise.all([listParties(), listTransactions(), listExpenses(), listProducts()]);
         const msg = dailyBrief(await buildBusinessInsights(prods, ps, pts, es)); showToast(msg);
         if ("speechSynthesis" in window) { const u = new SpeechSynthesisUtterance(msg); u.lang = "fa-IR"; u.rate = 0.9; window.speechSynthesis.cancel(); window.speechSynthesis.speak(u); }
@@ -1567,6 +1574,7 @@ async function render(): Promise<void> {
   // Trial and subscription access must be decided by the server. If the server
   // cannot be reached, fail closed instead of starting a device-local free trial.
   const subscription = await getSubscription().catch(() => ({ status: "none", plan: "none", expiresAt: null } as Subscription));
+  activeSubscription = subscription;
   // Bind global navigation/actions before the subscription gate so buttons always have a click handler.
   await bindActions();
   if (subscription.status !== "active") {
