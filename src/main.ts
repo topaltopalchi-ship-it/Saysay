@@ -1,7 +1,7 @@
 import "./style.css";
 import "./ui-entrypoints";
 import { scanBarcode } from "./barcode-scanner";
-import { authScreen, welcomeScreen } from "./auth";
+import { authScreen, signOut, welcomeScreen } from "./auth";
 import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import { Filesystem, Directory } from "@capacitor/filesystem";
@@ -65,27 +65,36 @@ function setProfessionalMode(value: boolean): void { localStorage.setItem(UI_MOD
 function settingsModal(): string {
   const unit = getCurrencyUnit();
   const professional = isProfessionalMode();
-  return `<div class="modal-backdrop" id="settings-modal"><section class="modal ui-mode-modal"><button class="modal-close" id="settings-close">×</button><span class="eyebrow">تنظیمات سای‌سای</span><h2>تنظیمات پایه</h2><label class="field"><span>واحد نمایش مبلغ</span><select id="currency-unit"><option value="toman" ${unit === "toman" ? "selected" : ""}>تومان</option><option value="rial" ${unit === "rial" ? "selected" : ""}>ریال</option></select></label><label class="professional-toggle"><input id="professional-mode" type="checkbox" ${professional ? "checked" : ""}><span><b>نسخه حرفه‌ای</b><small>گزارش‌ها و ابزارهای مدیریتی پیشرفته نمایش داده شوند.</small></span></label><button class="secondary-button wide" id="pricing-settings">🛡️ قیمت‌گذاری و حفظ سرمایه</button><button class="secondary-button wide" id="subscription-settings">مدیریت اشتراک</button><button class="primary-button wide" id="settings-save">ذخیره و اعمال</button></section></div>`;
+  return `<div class="modal-backdrop" id="settings-modal"><section class="modal ui-mode-modal"><button class="modal-close" id="settings-close">×</button><span class="eyebrow">تنظیمات سای‌سای</span><h2>تنظیمات پایه</h2><label class="field"><span>واحد نمایش مبلغ</span><select id="currency-unit"><option value="toman" ${unit === "toman" ? "selected" : ""}>تومان</option><option value="rial" ${unit === "rial" ? "selected" : ""}>ریال</option></select></label><label class="professional-toggle"><input id="professional-mode" type="checkbox" ${professional ? "checked" : ""}><span><b>حالت حرفه‌ای</b><small>نمایش گزارش‌ها و ابزارهای مدیریتی؛ این گزینه به‌تنهایی اشتراک پولی را فعال نمی‌کند.</small></span></label><button class="secondary-button wide" id="pricing-settings">🛡️ قیمت‌گذاری و حفظ سرمایه</button><p class="muted" id="account-status">${localStorage.getItem("sai-sai-account-username") ? `حساب متصل: ${localStorage.getItem("sai-sai-account-username")}` : "بدون حساب کاربری؛ برای بررسی اشتراک وارد حساب شوید."}</p><button class="secondary-button wide" id="account-action">${localStorage.getItem("sai-sai-account-username") ? "خروج از حساب" : "ورود / ساخت حساب"}</button><button class="secondary-button wide" id="subscription-settings">مدیریت اشتراک</button><button class="primary-button wide" id="settings-save">ذخیره و اعمال</button></section></div>`;
 }
 function bindSettingsModal(): void {
   const modal = document.querySelector<HTMLDivElement>("#settings-modal");
   if (!modal) return;
-modal.insertAdjacentHTML(
-  "beforeend",
-  `<button class="secondary-button wide" id="auth-logout">خروج از حساب</button>`
-);
-
-modal.querySelector("#auth-logout")?.addEventListener("click", () => {
-  localStorage.removeItem("sai-sai-unlocked");
+modal.querySelector("#account-action")?.addEventListener("click", async () => {
+  const hasAccount = Boolean(localStorage.getItem("sai-sai-account-username"));
   modal.remove();
-authScreen(() => {
-  localStorage.setItem("sai-sai-unlocked", "1");
-  void render();
-});
+  if (hasAccount) {
+    try { await signOut(); } catch { /* Clear the local account marker even if remote sign-out fails. */ }
+    localStorage.removeItem("sai-sai-account-username");
+    localStorage.removeItem("sai-sai-auth-method");
+    localStorage.removeItem("sai-sai-unlocked");
+  }
+  authScreen(() => {
+    localStorage.setItem("sai-sai-unlocked", "1");
+    void render();
+  });
 }); 
   modal.querySelector("#settings-close")?.addEventListener("click", () => modal.remove());
   modal.querySelector("#pricing-settings")?.addEventListener("click", async () => { modal.remove(); document.body.insertAdjacentHTML("beforeend", pricingSettingsModal()); bindPricingSettingsModal(); });
-  modal.querySelector("#subscription-settings")?.addEventListener("click", async () => { modal.remove(); const subscription = await getSubscription().catch(() => ({ status: "none", plan: "none", expiresAt: null } as Subscription)); showSubscription(subscription); });
+  modal.querySelector("#subscription-settings")?.addEventListener("click", async () => {
+    modal.remove();
+    try {
+      const subscription = await getSubscription();
+      showSubscription(subscription);
+    } catch (e) {
+      showSubscriptionError(e instanceof Error ? e.message : "وضعیت اشتراک دریافت نشد.");
+    }
+  });
   modal.querySelector("#settings-save")?.addEventListener("click", async () => {
     const unit = modal.querySelector<HTMLSelectElement>("#currency-unit")?.value === "toman" ? "toman" : "rial";
     setCurrencyUnit(unit);
@@ -255,13 +264,21 @@ function bindSellerHelperModal(productsForHelp: Product[], partiesForHelp: Party
 
 function uiModeModal(): string {
   const professional = isProfessionalMode();
-  return `<div class="modal-backdrop" id="ui-mode-modal"><section class="modal ui-mode-modal"><button class="modal-close" id="ui-mode-close">×</button><span class="eyebrow">شخصی‌سازی سای‌سای</span><h2>حالت کاربری</h2><p class="muted">اگر حسابدار نیستید، حالت ساده منوها و گزینه‌های ضروری را خلوت نگه می‌دارد.</p><label class="professional-toggle"><input id="professional-mode" type="checkbox" ${professional ? "checked" : ""}><span><b>نسخه حرفه‌ای</b><small>گزارش‌های پیشرفته، تنظیمات بیشتر و ابزارهای مدیریتی نمایش داده شوند.</small></span></label><button class="secondary-button wide" id="subscription-settings">مدیریت اشتراک</button><div class="mode-hint">${professional ? "حالت حرفه‌ای فعال است." : "حالت ساده برای استفاده روزمره فعال است."}</div><button class="primary-button wide" id="ui-mode-save">ذخیره و اعمال</button></section></div>`;
+  return `<div class="modal-backdrop" id="ui-mode-modal"><section class="modal ui-mode-modal"><button class="modal-close" id="ui-mode-close">×</button><span class="eyebrow">شخصی‌سازی سای‌سای</span><h2>حالت کاربری</h2><p class="muted">اگر حسابدار نیستید، حالت ساده منوها و گزینه‌های ضروری را خلوت نگه می‌دارد.</p><label class="professional-toggle"><input id="professional-mode" type="checkbox" ${professional ? "checked" : ""}><span><b>حالت حرفه‌ای</b><small>نمایش ابزارهای مدیریتی؛ این گزینه اشتراک پولی را فعال نمی‌کند.</small></span></label><button class="secondary-button wide" id="subscription-settings">مدیریت اشتراک</button><div class="mode-hint">${professional ? "حالت حرفه‌ای فعال است." : "حالت ساده برای استفاده روزمره فعال است."}</div><button class="primary-button wide" id="ui-mode-save">ذخیره و اعمال</button></section></div>`;
 }
 function bindUiModeModal(): void {
   const modal = document.querySelector<HTMLDivElement>("#ui-mode-modal");
   if (!modal) return;
   modal.querySelector("#ui-mode-close")?.addEventListener("click", () => modal.remove());
-  modal.querySelector("#subscription-settings")?.addEventListener("click", async () => { modal.remove(); const subscription = await getSubscription().catch(() => ({ status: "none", plan: "none", expiresAt: null } as Subscription)); showSubscription(subscription); });
+  modal.querySelector("#subscription-settings")?.addEventListener("click", async () => {
+    modal.remove();
+    try {
+      const subscription = await getSubscription();
+      showSubscription(subscription);
+    } catch (e) {
+      showSubscriptionError(e instanceof Error ? e.message : "وضعیت اشتراک دریافت نشد.");
+    }
+  });
   modal.querySelector("#ui-mode-save")?.addEventListener("click", async () => {
     const enabled = modal.querySelector<HTMLInputElement>("#professional-mode")?.checked ?? false;
     setProfessionalMode(enabled);
@@ -1246,14 +1263,31 @@ function paywall(subscription: Subscription): string {
 }
 
 function showSubscription(subscription: Subscription): void {
-  document.body.insertAdjacentHTML("beforeend", `<div class="modal-backdrop" id="sub-modal"><section class="modal"><button class="modal-close" id="sub-close">×</button><span class="eyebrow">اشتراک سای‌سای</span><h2>اشتراک ماهانه</h2><div class="price-card"><div><strong>پلن حرفه‌ای</strong><span>دسترسی کامل</span></div><b>ماهانه</b></div><button class="primary-button wide" id="sub-buy">ادامه پرداخت</button></section></div>`);
+  const expiry = subscription.expiresAt ? dateLabel(subscription.expiresAt) : "نامشخص";
+  const statusLabel = subscription.status === "active"
+    ? (subscription.isTrial ? "دورهٔ آزمایشی رایگان فعال است" : "اشتراک پولی فعال است")
+    : subscription.status === "expired" ? "دورهٔ رایگان یا اشتراک پایان یافته است"
+    : subscription.status === "pending" ? "خرید در انتظار تأیید است" : "اشتراک فعالی وجود ندارد";
+  document.querySelector("#sub-modal")?.remove();
+  document.body.insertAdjacentHTML("beforeend", `<div class="modal-backdrop" id="sub-modal"><section class="modal"><button class="modal-close" id="sub-close">×</button><span class="eyebrow">اشتراک سای‌سای</span><h2>مدیریت اشتراک</h2><div class="price-card"><div><strong>پلن ماهانه</strong><span>${statusLabel}</span></div><b>${subscription.status === "active" ? "فعال" : "غیرفعال"}</b></div><p class="muted">اعتبار تا: ${expiry}</p><p class="muted">دورهٔ رایگان حساب ۳۰ روز است. پرداخت واقعی تا اتصال درگاه یا خرید درون‌برنامه‌ای قابل انجام نیست.</p><p class="auth-error" id="sub-error" hidden></p><button class="primary-button wide" id="sub-buy">ادامه برای خرید اشتراک</button></section></div>`);
   document.querySelector("#sub-close")?.addEventListener("click", () => document.querySelector("#sub-modal")?.remove());
   document.querySelector("#sub-buy")?.addEventListener("click", subscribe);
 }
 
+function showSubscriptionError(message: string): void {
+  showSubscription({ status: "none", plan: "none", expiresAt: null });
+  const error = document.querySelector<HTMLElement>("#sub-error");
+  if (error) { error.hidden = false; error.textContent = message; }
+}
+
 async function subscribe(): Promise<void> {
   try { window.location.href = await createMonthlyCheckout(); }
-  catch (e) { showToast(e instanceof Error ? e.message : "پرداخت در دسترس نیست"); }
+  catch (e) {
+    const message = e instanceof Error ? e.message : "پرداخت در دسترس نیست";
+    showToast(message);
+    const error = document.querySelector<HTMLElement>("#sub-error");
+    if (error) { error.hidden = false; error.textContent = message; }
+  }
 }
 
 
