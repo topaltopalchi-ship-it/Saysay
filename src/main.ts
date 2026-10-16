@@ -1,7 +1,7 @@
 import "./style.css";
 import "./ui-entrypoints";
 import { scanBarcode } from "./barcode-scanner";
-import { authScreen, signOut, welcomeScreen } from "./auth";
+import { authScreen, signOut } from "./auth";
 import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import { Filesystem, Directory } from "@capacitor/filesystem";
@@ -1952,17 +1952,10 @@ void (async () => {
 if (localStorage.getItem("sai-sai-unlocked") === "1") {
   await render();
 } else {
-  welcomeScreen(
-    () => {
-      localStorage.setItem("sai-sai-unlocked", "1");
-      void render();
-    },
-    () => {
-      authScreen(() => {
-        localStorage.setItem("sai-sai-unlocked", "1");
-        void render();
-      });
-    },
-  );
+  // Account sign-in/sign-up is required; there is no guest/quick-entry path.
+  authScreen(() => {
+    localStorage.setItem("sai-sai-unlocked", "1");
+    void render();
+  });
 }
 })();
