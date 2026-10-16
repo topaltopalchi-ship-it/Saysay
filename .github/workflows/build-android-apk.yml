@@ -10,6 +10,7 @@ on:
       - main
       - build/android-apk-workflow
       - feature/supabase-username-auth-trial
+      - feature/cafebazaar-poolakey-integration
 
 permissions:
   contents: read
