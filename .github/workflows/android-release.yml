@@ -36,6 +36,19 @@ jobs:
         run: npx cap add android
       - name: Sync Capacitor
         run: npx cap sync android
+      - name: Add JitPack repository for CafeBazaar Poolakey
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("android/build.gradle")
+          source = path.read_text()
+          jitpack = "maven { url 'https://jitpack.io' }"
+          if jitpack not in source:
+              source = source.replace("mavenCentral()", "mavenCentral()\n        " + jitpack)
+              path.write_text(source)
+          if jitpack not in path.read_text():
+              raise SystemExit("Could not add JitPack repository to android/build.gradle")
+          PY
       - name: Install icon dependencies
         run: |
           python3 -m venv .venv
