@@ -1,19 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1536" height="1536" viewBox="0 0 1536 1536">
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
 <defs>
- <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#39aaff"/><stop offset=".48" stop-color="#0860f2"/><stop offset="1" stop-color="#0039c8"/></linearGradient>
- <linearGradient id="s" x1=".2" y1="0" x2=".8" y2="1"><stop stop-color="#fff"/><stop offset=".55" stop-color="#f5faff"/><stop offset="1" stop-color="#d5eaff"/></linearGradient>
- <linearGradient id="bar" x1="0" y1="1" x2="0" y2="0"><stop stop-color="#13c5ff"/><stop offset="1" stop-color="#38edb8"/></linearGradient>
- <filter id="shade" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#001b66" flood-opacity=".3"/></filter>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#101b68"/><stop offset=".55" stop-color="#06163b"/><stop offset="1" stop-color="#001b37"/></linearGradient>
+ <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a23cff"/><stop offset=".45" stop-color="#435bff"/><stop offset=".72" stop-color="#00cfff"/><stop offset="1" stop-color="#00fff0"/></linearGradient>
+ <linearGradient id="arrow" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#153fff"/><stop offset=".48" stop-color="#00aaff"/><stop offset="1" stop-color="#6dfcff"/></linearGradient>
+ <linearGradient id="letters" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#e2e8ff"/></linearGradient>
+ <filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="8" stdDeviation="9" flood-color="#000" flood-opacity=".65"/></filter>
 </defs>
-<rect width="1536" height="1536" rx="270" fill="url(#blue)"/>
-<ellipse cx="360" cy="190" rx="420" ry="300" fill="#9be1ff" opacity=".12"/>
-<g filter="url(#shade)">
- <path d="M1050 250 C960 195 815 170 660 192 C465 220 340 342 340 490 C340 626 455 701 645 748 C815 790 900 831 901 916 C902 1010 788 1068 644 1058 C516 1049 425 1005 354 936 L267 1034 C366 1140 503 1194 664 1190 C895 1184 1068 1066 1067 894 C1066 743 951 658 758 607 C602 566 511 530 511 470 C511 404 586 362 688 351 C796 339 887 359 970 405Z" fill="url(#s)"/>
- <path d="M315 1006 C395 1094 511 1130 646 1126 C800 1122 926 1044 979 938" fill="none" stroke="#4bdfff" stroke-width="20" stroke-linecap="round"/>
- <path d="M943 948 L1008 874 L1018 973Z" fill="#fff"/>
- <rect x="535" y="764" width="92" height="245" rx="30" fill="url(#bar)"/>
- <rect x="650" y="696" width="92" height="313" rx="30" fill="url(#bar)"/>
- <rect x="765" y="620" width="92" height="389" rx="30" fill="url(#bar)"/>
+<rect x="45" y="45" width="934" height="934" rx="190" fill="url(#bg)" stroke="url(#edge)" stroke-width="15" filter="url(#glow)"/>
+<rect x="59" y="59" width="906" height="906" rx="178" fill="none" stroke="#4f86ff" stroke-opacity=".7" stroke-width="3"/>
+<g filter="url(#shadow)">
+ <path d="M250 575 L414 425 L485 480 L742 225" fill="none" stroke="url(#arrow)" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/>
+ <path d="M680 236 L788 196 L776 310 L744 268 L704 282Z" fill="#59f4ff" stroke="#b6ffff" stroke-width="3" stroke-linejoin="round"/>
+ <path d="M244 592 L244 482 Q244 468 260 468 L280 468 Q294 468 294 482 L294 579 Q294 597 311 597 Q328 597 328 579 L328 527 Q328 513 342 513 L362 513 Q376 513 376 527 L376 579 Q376 597 393 597 Q410 597 410 579 L410 466 Q410 452 424 452 L444 452 Q458 452 458 466 L458 579 Q458 597 475 597 Q492 597 492 579 L492 533 Q492 519 506 519 L526 519 Q540 519 540 533 L540 579 Q540 597 557 597 Q574 597 574 579 L574 478 Q574 464 588 464 L608 464 Q622 464 622 478 L622 579 Q622 597 639 597 Q656 597 656 579 L656 532 Q656 518 670 518 L690 518 Q704 518 704 532 L704 579 Q704 597 721 597 Q738 597 738 579 L738 490 Q738 476 752 476 L772 476 Q786 476 786 490 L786 592 Q786 640 742 640 L287 640 Q244 640 244 592Z" fill="url(#letters)"/>
+ <text x="512" y="746" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-family="Tahoma,Arial,sans-serif" font-size="112" font-weight="900" fill="url(#letters)">سای‌سای</text>
 </g>
-<text x="768" y="1280" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-family="Vazirmatn,Noto Sans Arabic,Tahoma,sans-serif" font-size="174" font-weight="900" fill="#fff">سای‌سای</text>
 </svg>
