@@ -64,18 +64,22 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          path = Path("android/settings.gradle")
+          import re
+
+          path = Path("android/build.gradle")
           content = path.read_text()
           if "https://jitpack.io" not in content:
-              marker = "repositories {"
-              start = content.find("dependencyResolutionManagement")
-              pos = content.find(marker, start)
-              if start < 0 or pos < 0:
-                  raise SystemExit("Could not locate dependencyResolutionManagement repositories in android/settings.gradle")
-              insert_at = pos + len(marker)
-              content = content[:insert_at] + "\n        maven { url = uri('https://jitpack.io') }" + content[insert_at:]
-              path.write_text(content)
-          print("JitPack repository configured")
+              pattern = r"(allprojects\\s*\\{[\\s\\S]*?repositories\\s*\\{)"
+              updated, count = re.subn(
+                  pattern,
+                  r"\\1\\n        maven { url 'https://jitpack.io' }",
+                  content,
+                  count=1,
+              )
+              if count != 1:
+                  raise SystemExit("Could not locate allprojects repositories in android/build.gradle")
+              path.write_text(updated)
+          print("JitPack repository configured in android/build.gradle")
           PY
       - name: Sync Capacitor
         run: npx cap sync android
