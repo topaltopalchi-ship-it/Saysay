@@ -91,6 +91,13 @@ export function authScreen(onSuccess: () => void): void {
     recoveryWrap.hidden = true;
     recoveryInputWrap.hidden = mode !== "recover";
     recoveryConfirm.checked = false;
+    if (mode === "signup") {
+      // Show the recovery code as soon as signup is selected, rather than
+      // making the first press of "Create account" appear to do nothing.
+      recoveryCode = makeRecoveryCode();
+      recoveryCodeEl.textContent = recoveryCode;
+      recoveryWrap.hidden = false;
+    }
     wrapper.querySelector("#auth-title")!.textContent = mode === "login" ? "ورود به سای‌سای" : mode === "signup" ? "ساخت حساب سای‌سای" : "بازیابی رمز عبور";
     wrapper.querySelector("#auth-description")!.textContent = mode === "login"
       ? "نام کاربری و رمز عبور خود را وارد کنید."
