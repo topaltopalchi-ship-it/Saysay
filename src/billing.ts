@@ -1,3 +1,4 @@
+import { Poolakey } from "capacitor-poolakey";
 import { supabase } from "./auth";
 export type SubscriptionStatus = "active" | "expired" | "pending" | "none";
 export type BillingProvider = "web" | "bazaar" | "myket";
@@ -121,4 +122,45 @@ export async function verifyStorePurchase(purchase: StorePurchase): Promise<Subs
     throw new Error("خرید توسط سرور تأیید نشد");
   }
   return subscription;
+}
+
+
+/**
+ * Starts a CafeBazaar subscription purchase and verifies its purchase token
+ * with the authenticated Supabase Edge Function before granting access.
+ * The RSA key is a public verification key, not a payment secret.
+ */
+const CAFEBAZAAR_RSA_PUBLIC_KEY =
+  "MIHNMA0GCSqGSIb3DQEBAQUAA4G7ADCBtwKBrwDYeg6mGAfKgsLxOw3GaQ9O4Mzl/u5pMLoAx+6fHpYWm/3XdDv2ss56E64QUrsxaRjWNCoO3Z+nTX3YjPWn4zOR82gnRgpt3XcJmSFEMFYiGtNlFjE3r2HX0wKb5mJE/cvXDMvtQmrdqnbEd/Bt6jTK32DDyEEU+D2HJvLl4TQY2esERavDZdUMp9dYfM9v+Pwa1akYdTwRAXYZTfXN2ROyiTDWQu7gXB92eYAbVyUCAwEAAQ==";
+
+export async function purchaseBazaarSubscription(): Promise<Subscription> {
+  if (!supabase) throw new Error("اتصال Supabase تنظیم نشده است");
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !sessionData.session) {
+    throw new Error("برای خرید اشتراک ابتدا وارد حساب کاربری شوید");
+  }
+
+  let connected = false;
+  try {
+    await Poolakey.connectPayment(CAFEBAZAAR_RSA_PUBLIC_KEY);
+    connected = true;
+    const purchase = await Poolakey.subscribeProduct("Saysay110");
+
+    if (!purchase?.purchaseToken || purchase.productId !== "Saysay110") {
+      throw new Error("اطلاعات خرید کافه‌بازار معتبر نیست");
+    }
+    if (purchase.packageName !== "com.saisai.accounting") {
+      throw new Error("خرید برای بستهٔ دیگری ثبت شده است");
+    }
+
+    return await verifyStorePurchase({
+      provider: "bazaar",
+      productId: purchase.productId,
+      purchaseToken: purchase.purchaseToken,
+    });
+  } finally {
+    if (connected) {
+      try { await Poolakey.disconnectPayment(); } catch { /* Keep the original purchase/verification result. */ }
+    }
+  }
 }
