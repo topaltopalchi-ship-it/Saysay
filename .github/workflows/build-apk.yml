@@ -43,27 +43,35 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
-      - name: Add JitPack repository for CafeBazaar Poolakey
+      - name: Ensure JitPack repository for CafeBazaar Poolakey
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
-          path = Path("android/build.gradle")
-          source = path.read_text()
           jitpack = "maven { url 'https://jitpack.io' }"
-          marker = "allprojects"
-          if marker not in source:
-              raise SystemExit("Could not find allprojects in android/build.gradle")
-          start = source.index(marker)
-          repositories = source.find("repositories {", start)
-          if repositories < 0:
-              raise SystemExit("Could not find allprojects repositories in android/build.gradle")
-          insert_at = repositories + len("repositories {")
+          settings = Path("android/settings.gradle")
+          source = settings.read_text()
           if jitpack not in source:
-              source = source[:insert_at] + "\n        " + jitpack + source[insert_at:]
-              path.write_text(source)
-          if jitpack not in path.read_text():
-              raise SystemExit("Could not add JitPack to Android repositories")
+              match = re.search(r'(dependencyResolutionManagement\s*\{[\s\S]*?repositories\s*\{)', source)
+              if match:
+                  source = source[:match.end()] + "\n        " + jitpack + source[match.end():]
+                  settings.write_text(source)
+              else:
+                  raise SystemExit("Could not find dependencyResolutionManagement.repositories in android/settings.gradle")
+
+          root = Path("android/build.gradle")
+          if root.exists():
+              source = root.read_text()
+              if jitpack not in source:
+                  match = re.search(r'(allprojects\s*\{[\s\S]*?repositories\s*\{)', source)
+                  if match:
+                      source = source[:match.end()] + "\n        " + jitpack + source[match.end():]
+                      root.write_text(source)
+
+          if jitpack not in settings.read_text():
+              raise SystemExit("JitPack was not added to settings.gradle")
+          print("JitPack repository is configured in Android dependency resolution.")
           PY
 
       - name: Install Android icon rendering dependencies
