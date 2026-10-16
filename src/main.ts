@@ -1271,7 +1271,7 @@ function showSubscription(subscription: Subscription): void {
     : subscription.status === "expired" ? "دورهٔ رایگان یا اشتراک پایان یافته است"
     : subscription.status === "pending" ? "خرید در انتظار تأیید است" : "اشتراک فعالی وجود ندارد";
   document.querySelector("#sub-modal")?.remove();
-  document.body.insertAdjacentHTML("beforeend", `<div class="modal-backdrop" id="sub-modal"><section class="modal"><button class="modal-close" id="sub-close">×</button><span class="eyebrow">اشتراک سای‌سای</span><h2>مدیریت اشتراک</h2><div class="price-card"><div><strong>پلن ماهانه</strong><span>${statusLabel}</span></div><b>${subscription.status === "active" ? "فعال" : "غیرفعال"}</b></div><p class="muted">اعتبار تا: ${expiry}</p><p class="muted">دورهٔ رایگان حساب ۳۰ روز است. پرداخت واقعی تا اتصال درگاه یا خرید درون‌برنامه‌ای قابل انجام نیست.</p><p class="auth-error" id="sub-error" hidden></p><button class="primary-button wide" id="sub-buy">ادامه برای خرید اشتراک</button></section></div>`);
+  document.body.insertAdjacentHTML("beforeend", `<div class="modal-backdrop" id="sub-modal"><section class="modal"><button class="modal-close" id="sub-close">×</button><span class="eyebrow">اشتراک سای‌سای</span><h2>مدیریت اشتراک</h2><div class="price-card"><div><strong>پلن ماهانه</strong><span>${statusLabel}</span></div><b>${subscription.status === "active" ? "فعال" : "غیرفعال"}</b></div><p class="muted">اعتبار تا: ${expiry}</p><p class="muted">اشتراک ${money.format(subscription.durationDays || 30)}روزه · ${money.format(subscription.priceToman || 100000)} تومان</p><p class="muted">پرداخت امن درون‌برنامه‌ای کافه‌بازار؛ اشتراک فقط پس از تأیید سرور فعال می‌شود.</p><p class="auth-error" id="sub-error" hidden></p><button class="primary-button wide" id="sub-buy">خرید / تمدید اشتراک — ${money.format(subscription.priceToman || 100000)} تومان</button></section></div>`);
   document.querySelector("#sub-close")?.addEventListener("click", () => document.querySelector("#sub-modal")?.remove());
   document.querySelector("#sub-buy")?.addEventListener("click", subscribe);
 }
@@ -1283,12 +1283,21 @@ function showSubscriptionError(message: string): void {
 }
 
 async function subscribe(): Promise<void> {
-  try { window.location.href = await createMonthlyCheckout(); }
+  const button = document.querySelector<HTMLButtonElement>("#sub-buy");
+  if (button) { button.disabled = true; button.textContent = "در حال اتصال به کافه‌بازار…"; }
+  try {
+    const subscription = await createMonthlyCheckout();
+    showSubscription(subscription);
+    showToast("خرید تأیید شد؛ اشتراک شما فعال است.");
+  }
   catch (e) {
     const message = e instanceof Error ? e.message : "پرداخت در دسترس نیست";
     showToast(message);
     const error = document.querySelector<HTMLElement>("#sub-error");
     if (error) { error.hidden = false; error.textContent = message; }
+  } finally {
+    const button = document.querySelector<HTMLButtonElement>("#sub-buy");
+    if (button) { button.disabled = false; button.textContent = `خرید / تمدید اشتراک — ${money.format(100000)} تومان`; }
   }
 }
 
