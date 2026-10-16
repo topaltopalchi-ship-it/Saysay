@@ -74,16 +74,18 @@ modal.querySelector("#account-action")?.addEventListener("click", async () => {
   const hasAccount = Boolean(localStorage.getItem("sai-sai-account-username"));
   modal.remove();
   if (hasAccount) {
-    try { await signOut(); } catch { /* Clear the local account marker even if remote sign-out fails. */ }
+    try { await signOut(); } catch { /* Clear local account markers even if remote sign-out fails. */ }
     localStorage.removeItem("sai-sai-account-username");
     localStorage.removeItem("sai-sai-auth-method");
-    localStorage.removeItem("sai-sai-unlocked");
+    showToast("از حساب خارج شدید");
+    await render();
+    return;
   }
   authScreen(() => {
     localStorage.setItem("sai-sai-unlocked", "1");
     void render();
   });
-}); 
+});
   modal.querySelector("#settings-close")?.addEventListener("click", () => modal.remove());
   modal.querySelector("#pricing-settings")?.addEventListener("click", async () => { modal.remove(); document.body.insertAdjacentHTML("beforeend", pricingSettingsModal()); bindPricingSettingsModal(); });
   modal.querySelector("#subscription-settings")?.addEventListener("click", async () => {
