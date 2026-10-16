@@ -14,7 +14,7 @@ import {
   addParty, addProduct, updateProduct, deleteProduct, addSale, addSettlement, addExpense, addStockAdjustment, getDashboard, getStock, updateTransaction, deleteTransaction, updateExpense, deleteExpense,
   listParties, updateParty, deleteParty, listProducts, listTransactions, listExpenses, listMovements, listOrders, listChecks, calculateHistoricalCOGS, repairDataIntegrity, getPartyBalances
 } from "./db";
-import { createMonthlyCheckout, getSubscription, type Subscription } from "./billing";
+import { createMonthlyCheckout, getSubscription, purchaseBazaarSubscription, type Subscription } from "./billing";
 import { lineTotal, type Order, type Party, type Product, type Transaction, type TransactionLine } from "./domain";
 import { formatMoney, getCurrencyUnit, setCurrencyUnit, getCurrencyLabel, parseMoneyInput, moneyInputValue } from "./settings";
 import { openPurchaseModal } from "./purchase-ui";
@@ -1257,19 +1257,33 @@ function showSubscription(subscription: Subscription): void {
   const status = isActive
     ? (isTrial ? "دسترسی آزمایشی فعال است" : "اشتراک خریداری‌شده فعال است")
     : "دوره رایگان یا اشتراک شما به پایان رسیده است";
-  const paymentReady = Boolean(import.meta.env.VITE_BILLING_API_URL) && !Capacitor.isNativePlatform();
-  document.body.insertAdjacentHTML("beforeend", `<div class="modal-backdrop" id="sub-modal"><section class="modal"><button class="modal-close" id="sub-close">×</button><span class="eyebrow">اشتراک سای‌سای</span><h2>${heading}</h2><p class="muted">${status}</p><div class="price-card"><div><strong>اشتراک حرفه‌ای</strong><span>۳۰ روز دسترسی</span></div><b>${price} تومان</b></div><p class="muted">پایان دسترسی فعلی: ${expiry}</p><p class="muted">اطلاعات حسابداری شما روی همین گوشی باقی می‌ماند.</p><button class="primary-button wide" id="sub-buy" ${paymentReady ? "" : "disabled"}>${paymentReady ? "ادامه پرداخت اینترنتی" : "پرداخت کافه‌بازار در حال آماده‌سازی"}</button><p class="muted">${paymentReady ? "پرداخت اینترنتی از طریق سرویس پرداخت متصل‌شده انجام می‌شود." : "برای فعال‌شدن خرید، شناسه محصول و اعتبارسنجی رسمی خرید کافه‌بازار باید تنظیم شود."}</p></section></div>`);
+  const isBazaarAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
+  const paymentReady = isBazaarAndroid || Boolean(import.meta.env.VITE_BILLING_API_URL);
+  document.body.insertAdjacentHTML("beforeend", `<div class="modal-backdrop" id="sub-modal"><section class="modal"><button class="modal-close" id="sub-close">×</button><span class="eyebrow">اشتراک سای‌سای</span><h2>${heading}</h2><p class="muted">${status}</p><div class="price-card"><div><strong>اشتراک حرفه‌ای</strong><span>۳۰ روز دسترسی</span></div><b>${price} تومان</b></div><p class="muted">پایان دسترسی فعلی: ${expiry}</p><p class="muted">اطلاعات حسابداری شما روی همین گوشی باقی می‌ماند.</p><button class="primary-button wide" id="sub-buy" ${paymentReady ? "" : "disabled"}>${paymentReady ? (isBazaarAndroid ? "پرداخت با کافه‌بازار" : "ادامه پرداخت اینترنتی") : "پرداخت در حال آماده‌سازی"}</button><p class="muted">${paymentReady ? (isBazaarAndroid ? "خرید از مسیر رسمی اشتراک کافه‌بازار انجام و سپس در سرور تأیید می‌شود." : "پرداخت اینترنتی از طریق سرویس پرداخت متصل‌شده انجام می‌شود.") : "برای فعال‌شدن پرداخت اینترنتی، سرویس پرداخت باید تنظیم شود."}</p></section></div>`);
   document.querySelector("#sub-close")?.addEventListener("click", () => document.querySelector("#sub-modal")?.remove());
   if (paymentReady) document.querySelector("#sub-buy")?.addEventListener("click", subscribe);
 }
 
 async function subscribe(): Promise<void> {
-  if (Capacitor.isNativePlatform()) {
-    showToast("پرداخت کافه‌بازار هنوز پیکربندی نشده است؛ فعلاً خریدی انجام نمی‌شود.");
-    return;
+  const isBazaarAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
+  const button = document.querySelector<HTMLButtonElement>("#sub-buy");
+  if (button) { button.disabled = true; button.textContent = "در حال اتصال به پرداخت…"; }
+  try {
+    if (isBazaarAndroid) {
+      const subscription = await purchaseBazaarSubscription();
+      document.querySelector("#sub-modal")?.remove();
+      showToast("خرید تأیید شد؛ اشتراک شما فعال است");
+      showSubscription(subscription);
+      return;
+    }
+    window.location.href = await createMonthlyCheckout();
+  } catch (e) {
+    showToast(e instanceof Error ? e.message : "پرداخت در دسترس نیست");
+    if (button) {
+      button.disabled = false;
+      button.textContent = isBazaarAndroid ? "پرداخت با کافه‌بازار" : "ادامه پرداخت اینترنتی";
+    }
   }
-  try { window.location.href = await createMonthlyCheckout(); }
-  catch (e) { showToast(e instanceof Error ? e.message : "پرداخت در دسترس نیست"); }
 }
 
 function jalaliCalendarParts(date: Date): { year: number; month: number; day: number } {
