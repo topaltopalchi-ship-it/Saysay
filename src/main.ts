@@ -1,7 +1,7 @@
 import "./style.css";
 import "./ui-entrypoints";
 import { scanBarcode } from "./barcode-scanner";
-import { authScreen, signOut } from "./auth";
+import { authScreen, hasAuthenticatedSession, signOut } from "./auth";
 import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import { Filesystem, Directory } from "@capacitor/filesystem";
@@ -1924,10 +1924,12 @@ void (async () => {
     console.error("Sayar startup repair/setup failed", error);
   }
   
-if (localStorage.getItem("sai-sai-unlocked") === "1") {
+// Only a valid Supabase session may skip the login screen; local flags cannot bypass account login.
+if (await hasAuthenticatedSession()) {
+  localStorage.setItem("sai-sai-unlocked", "1");
   await render();
 } else {
-  // Account sign-in/sign-up is required; there is no guest/quick-entry path.
+  localStorage.removeItem("sai-sai-unlocked");
   authScreen(() => {
     localStorage.setItem("sai-sai-unlocked", "1");
     void render();
