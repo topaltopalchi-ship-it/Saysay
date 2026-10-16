@@ -55,7 +55,7 @@ jobs:
 
           insert_at = repositories + len("repositories {")
           if jitpack not in source:
-              source = source[:insert_at] + "\\n        " + jitpack + source[insert_at:]
+              source = source[:insert_at] + "\n        " + jitpack + source[insert_at:]
               path.write_text(source)
 
           if jitpack not in path.read_text():
