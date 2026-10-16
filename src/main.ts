@@ -1517,9 +1517,36 @@ function bindReportControls(): void {
 
 }
 
+const LOCAL_TRIAL_KEY = "sai-sai-local-trial-started-at";
+const LOCAL_TRIAL_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * Temporary pre-store trial so the accounting app remains usable while Bazaar
+ * billing is not connected. This is device-local and must be replaced by
+ * server-verified trial/subscription state before production billing release.
+ */
+function withLocalTrialFallback(serverSubscription: Subscription): Subscription {
+  if (serverSubscription.status === "active" || serverSubscription.status === "expired" || serverSubscription.status === "pending") {
+    return serverSubscription;
+  }
+
+  let startedAt = Number(localStorage.getItem(LOCAL_TRIAL_KEY) || 0);
+  if (!Number.isFinite(startedAt) || startedAt <= 0) {
+    startedAt = Date.now();
+    localStorage.setItem(LOCAL_TRIAL_KEY, String(startedAt));
+  }
+
+  const expiresAt = startedAt + LOCAL_TRIAL_DURATION_MS;
+  if (Date.now() >= expiresAt) {
+    return { status: "expired", plan: "none", expiresAt, isTrial: true, durationDays: 30 };
+  }
+  return { status: "active", plan: "monthly", expiresAt, isTrial: true, durationDays: 30, provider: "web" };
+}
+
 async function render(): Promise<void> {
   void checkLowStockAlerts();
-  const subscription = await getSubscription().catch(() => ({ status: "none", plan: "none", expiresAt: null } as Subscription));
+  const serverSubscription = await getSubscription().catch(() => ({ status: "none", plan: "none", expiresAt: null } as Subscription));
+  const subscription = withLocalTrialFallback(serverSubscription);
   // Bind global navigation/actions before the subscription gate so buttons always have a click handler.
   await bindActions();
   if (subscription.status !== "active") {
