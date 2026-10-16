@@ -640,21 +640,47 @@ export async function restoreBackup(data: {
   products: Product[]; parties: Party[]; transactions: Transaction[]; expenses?: Expense[];
   accounts?: Account[]; accountEntries?: AccountEntry[]; checks?: Check[]; movements?: StockMovement[]; orders?: Order[];
 }): Promise<void> {
+  // Validate the complete backup before touching the current database.
+  if (!data || !Array.isArray(data.products) || !Array.isArray(data.parties) || !Array.isArray(data.transactions)) {
+    throw new Error("ساختار فایل پشتیبان معتبر نیست؛ فایل پشتیبان سای‌سای را انتخاب کنید.");
+  }
+
+  const maps: Record<string, Array<{ id: string }>> = {
+    products: data.products,
+    parties: data.parties,
+    transactions: data.transactions,
+    expenses: Array.isArray(data.expenses) ? data.expenses : [],
+    accounts: Array.isArray(data.accounts) ? data.accounts : [],
+    accountEntries: Array.isArray(data.accountEntries) ? data.accountEntries : [],
+    checks: Array.isArray(data.checks) ? data.checks : [],
+    movements: Array.isArray(data.movements) ? data.movements : [],
+    orders: Array.isArray(data.orders) ? data.orders : [],
+  };
+
+  for (const [store, items] of Object.entries(maps)) {
+    if (items.some(item => !item || typeof item.id !== "string" || !item.id.trim())) {
+      throw new Error(`فایل پشتیبان در بخش «${store}» رکورد نامعتبر دارد؛ اطلاعات فعلی تغییری نکرد.`);
+    }
+  }
+
   const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const stores = ["products","parties","transactions","movements","expenses","accounts","accountEntries","checks","orders"];
-    const tx = db.transaction(stores, "readwrite");
-    const maps: Record<string, unknown[]> = {
-      products: data.products ?? [], parties: data.parties ?? [], transactions: data.transactions ?? [],
-      expenses: data.expenses ?? [], accounts: data.accounts ?? [], accountEntries: data.accountEntries ?? [], checks: data.checks ?? [], movements: data.movements ?? [], orders: data.orders ?? [],
-    };
-    for (const store of stores) {
-      tx.objectStore(store).clear();
-      for (const item of maps[store] ?? []) tx.objectStore(store).put(item);
+  const storeNames = Object.keys(maps);
+  await new Promise<void>((resolve, reject) => {
+    let tx: IDBTransaction;
+    try {
+      tx = db.transaction(storeNames, "readwrite");
+      for (const store of storeNames) {
+        const objectStore = tx.objectStore(store);
+        objectStore.clear();
+        for (const item of maps[store]) objectStore.put(item);
+      }
+    } catch (error) {
+      reject(error instanceof Error ? error : new Error("شروع بازیابی ناموفق بود"));
+      return;
     }
     tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error ?? new Error("بازیابی ناموفق بود"));
+    tx.onerror = () => reject(tx.error ?? new Error("بازیابی انجام نشد؛ لطفاً فایل پشتیبان را بررسی کنید."));
+    tx.onabort = () => reject(tx.error ?? new Error("بازیابی لغو شد؛ اطلاعات قبلی حفظ نشدند."));
   });
 }
 
