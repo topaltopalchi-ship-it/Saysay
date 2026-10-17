@@ -36,20 +36,21 @@ const navItems: Array<[Tab, string, string]> = [
 ];
 const money = new Intl.NumberFormat("fa-IR");
 
-window.addEventListener("sai-sai-quota-account", () => {
-  authScreen(() => { localStorage.setItem("sai-sai-unlocked", "1"); void render(); });
-});
-window.addEventListener("sai-sai-quota-subscription", async () => {
+async function openAccountThenSubscription(initialMode: "login" | "signup"): Promise<void> {
   const openSubscription = async () => {
+    localStorage.setItem("sai-sai-unlocked", "1");
+    await render();
     try { showSubscription(await getSubscription()); }
     catch (e) { showSubscriptionError(e instanceof Error ? e.message : "وضعیت اشتراک دریافت نشد."); }
   };
   if (!localStorage.getItem("sai-sai-account-username")) {
-    authScreen(() => { localStorage.setItem("sai-sai-unlocked", "1"); void openSubscription(); });
+    authScreen(() => { void openSubscription(); }, initialMode);
     return;
   }
   await openSubscription();
-});
+}
+window.addEventListener("sai-sai-quota-account", () => { void openAccountThenSubscription("signup"); });
+window.addEventListener("sai-sai-quota-subscription", () => { void openAccountThenSubscription("signup"); });
 
 function numericValue(value: string | number | undefined | null): number {
   const normalized = String(value ?? "")
@@ -374,7 +375,7 @@ function layout(content: string, subscription: Subscription): void {
         <div class="brand-block"><img class="brand-logo" src="/icon-192.svg" alt="لوگوی سای‌سای"><div><span class="eyebrow">مدیریت مالی و فروش</span><h1>سای‌سای</h1></div></div>
         <div class="header-actions">
           <label class="header-currency" aria-label="انتخاب واحد پول"><span>واحد پول</span><select id="header-currency-unit"><option value="toman" ${getCurrencyUnit() === "toman" ? "selected" : ""}>تومان</option><option value="rial" ${getCurrencyUnit() === "rial" ? "selected" : ""}>ریال</option></select></label>
-          <span class="plan-pill ${subscription.status}">${subscription.status === "active" ? (subscription.isTrial ? "دوره رایگان ۳۰ روزه" : "اشتراک فعال") : "اشتراک لازم است"}</span>
+          <span class="plan-pill ${subscription.status}">${isGuestMode() ? "مهمان · سهمیه محدود" : subscription.status === "active" ? "اشتراک فعال" : "اشتراک لازم است"}</span>
           <button class="icon-button" id="settings" aria-label="حالت کاربری">⚙</button>
         </div>
       </header>
@@ -410,8 +411,8 @@ async function dashboardView(subscription: Subscription): Promise<string> {
   const lowStockHtml = lowStock.length ? '<section class="panel low-stock-alert-panel"><div class="section-head"><div><h3>⚠️ کالاهای نیازمند تأمین</h3><span class="muted">موجودی به حد هشدار رسیده است</span></div><strong>' + money.format(lowStock.length) + ' کالا</strong></div>' +
     lowStock.map(x => '<div class="person-row"><div class="person-avatar">!</div><div><strong>' + x.product.name + '</strong><small>حد هشدار: ' + money.format(x.product.lowStock) + ' ' + x.product.unit + (x.product.supplierId ? ' · تأمین‌کننده: ' + (supplierParties.find(p => p.id === x.product.supplierId)?.name || 'ثبت نشده') : '') + '</small></div><b class="debt-amount">' + money.format(x.stock) + ' ' + x.product.unit + '</b><span class="account-actions"><button type="button" class="secondary-button supply-item" data-supply-product="' + x.product.id + '">تأمین کالا</button>' + ((supplierParties.find(p => p.id === x.product.supplierId)?.phone || "").trim() ? '<a class="secondary-button" href="tel:' + (supplierParties.find(p => p.id === x.product.supplierId)?.phone || "").trim() + '">📞 تماس</a>' : '') + '</span></div>').join("") + '</section>' : "";
   const recent = d.recent.length ? d.recent.map(t => transactionRow(t)).join("") : '<div class="empty-inline"><span>◌</span><p>هنوز تراکنشی ثبت نشده است.</p></div>';
-  return '<section class="hero"><div><p class="hero-kicker">داشبورد مدیریت هوشمند</p>' + '<span class="trial-badge">۳۰ روز رایگان</span>' + '<h2>سای‌سای مراقب کسب‌وکار شماست</h2><p class="muted">' + brief + '</p></div><div class="hero-mark"><img src="/saysay-logo.svg" alt="سای‌سای؛ مدیر فروش و هوش مصنوعی" /></div></section>' +
-    (subscription.status !== "active" ? '<section class="subscription-card"><div><span class="eyebrow">اشتراک سای‌سای</span><h3>برای استفاده از نسخه کامل، اشتراک ماهانه فعال کنید.</h3><p class="muted">بعد از تأیید موفق پرداخت، دسترسی از سمت سرور فعال می‌شود.</p></div><button class="primary-button" data-subscribe>خرید اشتراک ماهانه</button></section>' : "") +
+  return '<section class="hero"><div><p class="hero-kicker">داشبورد مدیریت هوشمند</p>' + '<span class="trial-badge">سهمیه رایگان ۱۰تایی</span>' + '<h2>سای‌سای مراقب کسب‌وکار شماست</h2><p class="muted">' + brief + '</p></div><div class="hero-mark"><img src="/saysay-logo.svg" alt="سای‌سای؛ مدیر فروش و هوش مصنوعی" /></div></section>' +
+    (!isGuestMode() && subscription.status !== "active" ? '<section class="subscription-card"><div><span class="eyebrow">اشتراک سای‌سای</span><h3>برای استفاده از نسخه کامل، اشتراک ماهانه فعال کنید.</h3><p class="muted">بعد از تأیید موفق پرداخت، دسترسی از سمت سرور فعال می‌شود.</p></div><button class="primary-button" data-subscribe>خرید اشتراک ماهانه</button></section>' : "") +
     lowStockHtml +
     '<section class="stats-grid">' + stat("فروش امروز", rial(d.salesToday), "primary") + stat("دریافت امروز", rial(d.receiptsToday), "success") +
     (isProfessionalMode() ? stat("مطالبات", rial(d.receivables), "warning") + stat("موجودی کم", money.format(d.lowStock) + " کالا", "danger") : "") + '</section>' +
@@ -1590,39 +1591,20 @@ function bindReportControls(): void {
 
 }
 
-const LOCAL_TRIAL_KEY = "sai-sai-local-trial-started-at";
-const LOCAL_TRIAL_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
-
-/**
- * Temporary pre-store trial so the accounting app remains usable while Bazaar
- * billing is not connected. This is device-local and must be replaced by
- * server-verified trial/subscription state before production billing release.
- */
-function withLocalTrialFallback(serverSubscription: Subscription): Subscription {
-  if (serverSubscription.status === "active" || serverSubscription.status === "expired" || serverSubscription.status === "pending") {
-    return serverSubscription;
-  }
-
-  let startedAt = Number(localStorage.getItem(LOCAL_TRIAL_KEY) || 0);
-  if (!Number.isFinite(startedAt) || startedAt <= 0) {
-    startedAt = Date.now();
-    localStorage.setItem(LOCAL_TRIAL_KEY, String(startedAt));
-  }
-
-  const expiresAt = startedAt + LOCAL_TRIAL_DURATION_MS;
-  if (Date.now() >= expiresAt) {
-    return { status: "expired", plan: "none", expiresAt, isTrial: true, durationDays: 30 };
-  }
-  return { status: "active", plan: "monthly", expiresAt, isTrial: true, durationDays: 30, provider: "web" };
+function isGuestMode(): boolean {
+  return localStorage.getItem("sai-sai-unlocked") === "1"
+    && !localStorage.getItem("sai-sai-account-username");
 }
 
 async function render(): Promise<void> {
   void checkLowStockAlerts();
-  const serverSubscription = await getSubscription().catch(() => ({ status: "none", plan: "none", expiresAt: null } as Subscription));
-  const subscription = withLocalTrialFallback(serverSubscription);
+  const guestMode = isGuestMode();
+  const subscription = guestMode
+    ? ({ status: "none", plan: "none", expiresAt: null } as Subscription)
+    : await getSubscription().catch(() => ({ status: "none", plan: "none", expiresAt: null } as Subscription));
   // Bind global navigation/actions before the subscription gate so buttons always have a click handler.
   await bindActions();
-  if (subscription.status !== "active") {
+  if (!guestMode && subscription.status !== "active") {
     layout(paywall(subscription), subscription);
     document.querySelectorAll<HTMLButtonElement>("[data-subscribe]").forEach(b => b.addEventListener("click", subscribe));
     return;
