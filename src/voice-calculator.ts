@@ -1,6 +1,6 @@
 import { SpeechRecognition } from "@capacitor-community/speech-recognition";
 import { speakSaiSai } from "./voice-assistant";
-import { withGuestFeature } from "./guest-quota";
+import { assertGuestFeatureAvailable, withGuestFeature } from "./guest-quota";
 
 function normalizeDigits(text: string): string {
   return text.replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
@@ -68,6 +68,8 @@ function calculate(expression: string): number {
 function formatResult(value:number):string { return Number.isInteger(value) ? value.toLocaleString("fa-IR") : value.toLocaleString("fa-IR",{maximumFractionDigits:8}); }
 
 async function listenAndCalculate(modal: HTMLElement): Promise<void> {
+  // Check the guest allowance before opening the microphone so exhausted users are prompted immediately.
+  assertGuestFeatureAvailable("calculator");
   const button=modal.querySelector<HTMLButtonElement>("#calc-voice")!;
   const available=await SpeechRecognition.available().catch(()=>({available:false}));
   if(!available.available){ alert("تشخیص صدا در این دستگاه در دسترس نیست"); return; }
