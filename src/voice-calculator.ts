@@ -1,5 +1,6 @@
 import { SpeechRecognition } from "@capacitor-community/speech-recognition";
 import { speakSaiSai } from "./voice-assistant";
+import { withGuestFeature } from "./guest-quota";
 
 function normalizeDigits(text: string): string {
   return text.replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
@@ -80,9 +81,11 @@ async function listenAndCalculate(modal: HTMLElement): Promise<void> {
     const text=result.matches?.[0]?.trim()||"";
     if(!text) throw new Error("عملیات شنیده نشد");
     const expression=expressionFromSpeech(text);
-    const value=calculate(expression);
-    modal.querySelector<HTMLElement>("#calc-expression")!.textContent=text;
-    modal.querySelector<HTMLElement>("#calc-result")!.textContent=formatResult(value);
+    await withGuestFeature("calculator", async () => {
+      const value=calculate(expression);
+      modal.querySelector<HTMLElement>("#calc-expression")!.textContent=text;
+      modal.querySelector<HTMLElement>("#calc-result")!.textContent=formatResult(value);
+    });
     // Do not auto-start any further speech-recognition cycle after a successful
     // calculation. Some Android speech services can leave a stale English
     // "Didn't understand, please try again" message on screen. Keep the calculator
@@ -106,9 +109,9 @@ export function openVoiceCalculator(): void {
   modal.querySelector("#calc-close")?.addEventListener("click",()=>modal.remove());
   modal.querySelector("#calc-close-2")?.addEventListener("click",()=>modal.remove());
   const input=modal.querySelector<HTMLInputElement>("#calc-input")!;
-  const evaluate=()=>{try{const expression=normalizeDigits(input.value).replace(/[×]/g,"*").replace(/[÷]/g,"/").replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).trim();const value=calculate(expression);modal.querySelector<HTMLElement>("#calc-expression")!.textContent=expression;modal.querySelector<HTMLElement>("#calc-result")!.textContent=formatResult(value);}catch(e){modal.querySelector<HTMLElement>("#calc-result")!.textContent=e instanceof Error?e.message:"عبارت نامعتبر است";}};
+  const evaluate=async()=>{try{const expression=normalizeDigits(input.value).replace(/[×]/g,"*").replace(/[÷]/g,"/").replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).trim();await withGuestFeature("calculator",async()=>{const value=calculate(expression);modal.querySelector<HTMLElement>("#calc-expression")!.textContent=expression;modal.querySelector<HTMLElement>("#calc-result")!.textContent=formatResult(value);});}catch(e){modal.querySelector<HTMLElement>("#calc-result")!.textContent=e instanceof Error?e.message:"عبارت نامعتبر است";}};
   modal.querySelector("#calc-evaluate")?.addEventListener("click",evaluate);
-  input.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();evaluate();}});
+  input.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();void evaluate();}});
   modal.querySelectorAll<HTMLButtonElement>("[data-calc-key]").forEach(key=>key.addEventListener("click",()=>{const value=key.dataset.calcKey||"";if(value==="clear")input.value="";else if(value==="back")input.value=input.value.slice(0,-1);else input.value+=value;input.focus();}));
   modal.querySelector("#calc-voice")?.addEventListener("click",()=>void listenAndCalculate(modal));
 }
