@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - feature/guest-10-free-uses
+      - release/myket-free
     tags:
       - "v*"
 
