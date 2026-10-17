@@ -1602,13 +1602,10 @@ async function render(): Promise<void> {
   const subscription = guestMode
     ? ({ status: "none", plan: "none", expiresAt: null } as Subscription)
     : await getSubscription().catch(() => ({ status: "none", plan: "none", expiresAt: null } as Subscription));
-  // Bind global navigation/actions before the subscription gate so buttons always have a click handler.
+  // Keep the normal app shell and navigation available after account login.
+  // Subscription status is shown in the header; it must not replace the dashboard
+  // or make every bottom-navigation button appear unresponsive.
   await bindActions();
-  if (!guestMode && subscription.status !== "active") {
-    layout(paywall(subscription), subscription);
-    document.querySelectorAll<HTMLButtonElement>("[data-subscribe]").forEach(b => b.addEventListener("click", subscribe));
-    return;
-  }
 
   let content = "";
   if (activeTab === "dashboard") content = await dashboardView(subscription);
