@@ -80,9 +80,9 @@ Deno.serve(async (req) => {
     const { data, error } = await admin.auth.signInWithPassword({ email: emailAlias, password });
     if (error || !data.session || !data.user) return json({ error: "نام کاربری یا رمز عبور صحیح نیست." }, 401);
     const { data: profile, error: profileError } = await admin.from("user_profiles")
-      .select("username,trial_started_at,trial_ends_at").eq("user_id", data.user.id).maybeSingle();
+      .select("username").eq("user_id", data.user.id).maybeSingle();
     if (profileError || !profile) return json({ error: "پروفایل حساب پیدا نشد." }, 403);
-    return json({ session: data.session, user: { id: data.user.id, username: profile.username }, trialStartedAt: profile.trial_started_at, trialEndsAt: profile.trial_ends_at });
+    return json({ session: data.session, user: { id: data.user.id, username: profile.username } });
   }
 
   if (body.action === "recover") {
