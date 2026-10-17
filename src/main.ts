@@ -183,22 +183,29 @@ function bindMarketPricesModal(): void {
     button.disabled = true;
     status.textContent = "در حال دریافت قیمت‌ها…";
     try {
-      const response = await fetch("https://raw.githubusercontent.com/iran-market/iran-market.github.io/main/data/popular.json", {cache:"no-store",headers:{Accept:"application/json"}});
-      if (!response.ok) throw new Error("HTTP " + response.status);
-      const raw = await response.json() as {data?:Array<Record<string,unknown>>;items?:Array<Record<string,unknown>>};
-      const rows = Array.isArray(raw.data) ? raw.data : Array.isArray(raw.items) ? raw.items : [];
-      const find = (re:RegExp) => rows.map(v => ({label:String(v.name??v.title??v.label??v.symbol??""),symbol:String(v.symbol??v.id??v.code??""),price:Number(String(v.price??v.value??v.rate??"").replace(/[٬,]/g,"").replace(/[^0-9.\-]/g,""))})).find(v=>re.test((v.label+" "+v.symbol).toLowerCase())&&v.price>0);
-      const usd=find(/usd_irr_free|usd.*free|dollar.*free|دلار.*آزاد|دلار آمریکا/);
-      const gold=find(/gold_18|geram18|18k|gold.*18|طلای ۱۸|طلای 18/);
-      const coin=find(/coin.*emami|emami.*coin|سکه امامی/);
-      if (!usd && !gold && !coin) throw new Error("قیمت‌ها از منبع شناسایی نشدند");
-      const fmt=(n:number)=>new Intl.NumberFormat("fa-IR").format(Math.round(n))+" تومان";
-      if(usd) m.querySelector("#market-live-usd")!.textContent=fmt(usd.price);
-      if(gold) m.querySelector("#market-live-gold")!.textContent=fmt(gold.price)+" / گرم";
-      if(coin) m.querySelector("#market-live-coin")!.textContent=fmt(coin.price);
-      status.textContent="آخرین دادهٔ دریافت‌شده از منبع عمومی؛ ممکن است با تأخیر همراه باشد.";
+      await withGuestFeature("marketRates", async () => {
+        try {
+          const response = await fetch("https://raw.githubusercontent.com/iran-market/iran-market.github.io/main/data/popular.json", {cache:"no-store",headers:{Accept:"application/json"}});
+          if (!response.ok) throw new Error("HTTP " + response.status);
+          const raw = await response.json() as {data?:Array<Record<string,unknown>>;items?:Array<Record<string,unknown>>};
+          const rows = Array.isArray(raw.data) ? raw.data : Array.isArray(raw.items) ? raw.items : [];
+          const find = (re:RegExp) => rows.map(v => ({label:String(v.name??v.title??v.label??v.symbol??""),symbol:String(v.symbol??v.id??v.code??""),price:Number(String(v.price??v.value??v.rate??"").replace(/[٬,]/g,"").replace(/[^0-9.\\-]/g,""))})).find(v=>re.test((v.label+" "+v.symbol).toLowerCase())&&v.price>0);
+          const usd=find(/usd_irr_free|usd.*free|dollar.*free|دلار.*آزاد|دلار آمریکا/);
+          const gold=find(/gold_18|geram18|18k|gold.*18|طلای ۱۸|طلای 18/);
+          const coin=find(/coin.*emami|emami.*coin|سکه امامی/);
+          if (!usd && !gold && !coin) throw new Error("قیمت‌ها از منبع شناسایی نشدند");
+          const fmt=(n:number)=>new Intl.NumberFormat("fa-IR").format(Math.round(n))+" تومان";
+          if(usd) m.querySelector("#market-live-usd")!.textContent=fmt(usd.price);
+          if(gold) m.querySelector("#market-live-gold")!.textContent=fmt(gold.price)+" / گرم";
+          if(coin) m.querySelector("#market-live-coin")!.textContent=fmt(coin.price);
+          status.textContent="آخرین دادهٔ دریافت‌شده از منبع عمومی؛ ممکن است با تأخیر همراه باشد.";
+        } catch {
+          status.textContent="دریافت قیمت زنده ناموفق بود. اتصال اینترنت را بررسی کنید؛ نرخ ذخیره‌شده نمایش داده شده است.";
+          throw new Error("دریافت قیمت زنده ناموفق بود");
+        }
+      });
     } catch {
-      status.textContent="دریافت قیمت زنده ناموفق بود. اتصال اینترنت را بررسی کنید؛ نرخ ذخیره‌شده نمایش داده شده است.";
+      // Quota dialogs and network errors are already handled in the modal; failed fetches do not consume a use.
     } finally { button.disabled=false; }
   });
 }
