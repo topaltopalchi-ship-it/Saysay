@@ -1850,7 +1850,7 @@ return receiptCommand ? ("دریافت " + rial(commandAmount) + " از " + comm
     const id = button.dataset.accountDelete; if (!id) return;
     const account = (await listAccounts()).find(a => a.id === id); if (!account) return;
     if (!confirm(`حساب «${account.name}» حذف شود؟`)) return;
-    try { const db = await import("./db"); await db.deleteAccount(id); showToast("حساب حذف شد"); await render(); }
+    try { await withGuestFeature("cash", async () => { const db = await import("./db"); await db.deleteAccount(id); }); showToast("حساب حذف شد"); await render(); }
     catch (e) { showToast(e instanceof Error ? e.message : "حذف حساب ناموفق بود"); }
   }));
   document.querySelector("#new-transfer")?.addEventListener("click", async () => { const accounts = await listAccounts(); if (accounts.length < 2) { showToast("برای انتقال حداقل دو حساب ثبت کنید"); return; } const balances = await getAccountBalances(); document.body.insertAdjacentHTML("beforeend", transferModal(accounts, balances)); const modal = document.querySelector<HTMLElement>("#transfer-modal"); if (modal) void bindTransferModal(modal, async m => { showToast(m); await render(); }); });
