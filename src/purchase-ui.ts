@@ -1,6 +1,7 @@
 import { addPurchase, listAccounts, updateTransaction } from "./db";
 import type { Party, Product, Transaction } from "./domain";
 import { getCurrencyLabel, moneyInputValue, parseMoneyInput } from "./settings";
+import { withGuestFeature } from "./guest-quota";
 
 type MoneyFormat = (value: number) => string;
 type Done = (message: string) => void;
@@ -84,16 +85,16 @@ export function openPurchaseModal(products: Product[], parties: Party[], rial: M
       const accountId = account.value || undefined;
 
       if (existing) {
-        await updateTransaction(existing.id, {
+        await withGuestFeature("purchases", () => updateTransaction(existing.id, {
           date: Date.now(),
           partyId,
           accountId,
           description: existing.description || ("خرید " + p.name),
           lines: [{ productId: p.id, quantity, unitPrice, discount: disc }],
           paid: paidValue
-        });
+        }));
       } else {
-        await addPurchase({
+        await withGuestFeature("purchases", () => addPurchase({
           date: Date.now(),
           partyId,
           accountId,
