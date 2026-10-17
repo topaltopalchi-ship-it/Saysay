@@ -51,16 +51,16 @@ jobs:
           import re
           p = Path("android/app/build.gradle")
           s = p.read_text()
-          s, n = re.subn(r'versionCode\s+\d+', 'versionCode 3', s, count=1)
+          s, n = re.subn(r'versionCode\s+\d+', 'versionCode 4', s, count=1)
           if n != 1:
               raise SystemExit("Could not find Android versionCode in generated build.gradle")
-          s, n = re.subn(r'versionName\s+"[^"]+"', 'versionName "0.1.5"', s, count=1)
+          s, n = re.subn(r'versionName\s+"[^"]+"', 'versionName "0.1.6"', s, count=1)
           if n != 1:
-              s, n = re.subn(r"versionName\s+'[^']+'", "versionName '0.1.5'", s, count=1)
+              s, n = re.subn(r"versionName\s+'[^']+'", "versionName '0.1.6'", s, count=1)
           if n != 1:
               raise SystemExit("Could not find Android versionName in generated build.gradle")
           p.write_text(s)
-          print("Android version set to versionCode 3 / versionName 0.1.5")
+          print("Android version set to versionCode 4 / versionName 0.1.6")
           PY
 
       - name: Ensure JitPack repository for CafeBazaar Poolakey
