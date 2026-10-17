@@ -644,7 +644,7 @@ async function openInvoice(t: Transaction): Promise<void> {
   });
   invoice.querySelector("#invoice-print")?.addEventListener("click", async () => {
     try {
-      await printHtml("فاکتور سای‌سای", invoice.querySelector(".invoice-modal")?.outerHTML || invoice.innerHTML);
+      await withGuestFeature("exports", () => printHtml("فاکتور سای‌سای", invoice.querySelector(".invoice-modal")?.outerHTML || invoice.innerHTML));
     } catch (e) {
       showToast(e instanceof Error ? e.message : "چاپ / PDF در دسترس نیست");
     }
@@ -659,9 +659,9 @@ async function openInvoice(t: Transaction): Promise<void> {
     const button = invoice.querySelector<HTMLButtonElement>("#invoice-share");
     if (button) { button.disabled = true; button.textContent = "در حال آماده‌سازی…"; }
     try {
-      await shareInvoiceAsImage(invoiceElement, title, t.invoiceNumber);
+      await withGuestFeature("exports", () => shareInvoiceAsImage(invoiceElement, title, t.invoiceNumber));
     } catch (error) {
-      if (error instanceof Error && /cancel|abort/i.test(error.name + error.message)) return;
+      if (error instanceof Error && /cancel|abort/i.test(error.name + error.message)) throw error;
       showToast("ارسال فاکتور ناموفق بود؛ دوباره تلاش کنید");
     } finally {
       if (button) { button.disabled = false; button.textContent = "ارسال فاکتور"; }
@@ -1909,17 +1909,19 @@ return receiptCommand ? ("دریافت " + rial(commandAmount) + " از " + comm
   window.addEventListener("sai-sai-refresh", () => { void render(); });
   document.querySelector("#report-print")?.addEventListener("click", async () => {
     try {
-      await printHtml("گزارش سود و زیان سای‌سای", document.querySelector("#view")?.innerHTML || "", "portrait");
+      await withGuestFeature("exports", () => printHtml("گزارش سود و زیان سای‌سای", document.querySelector("#view")?.innerHTML || "", "portrait"));
     } catch (e) {
       showToast(e instanceof Error ? e.message : "چاپ / PDF در دسترس نیست");
     }
   });
   document.querySelector("#report-csv")?.addEventListener("click", async () => {
     try {
-      const [transactions, expenses] = await Promise.all([listTransactions(), listExpenses()]);
-      const workbook = buildReportWorkbook(transactions, expenses);
-      const base64 = XLSX.write(workbook, { bookType: "xlsx", type: "base64" });
-      await shareBase64File(`sai-sai-report-${new Date().toISOString().slice(0,10)}.xlsx`, base64, "گزارش Excel سای‌سای");
+      await withGuestFeature("exports", async () => {
+        const [transactions, expenses] = await Promise.all([listTransactions(), listExpenses()]);
+        const workbook = buildReportWorkbook(transactions, expenses);
+        const base64 = XLSX.write(workbook, { bookType: "xlsx", type: "base64" });
+        await shareBase64File(`sai-sai-report-${new Date().toISOString().slice(0,10)}.xlsx`, base64, "گزارش Excel سای‌سای");
+      });
     } catch (e) {
       showToast(e instanceof Error ? e.message : "خروجی Excel ناموفق بود");
     }
@@ -1937,11 +1939,15 @@ return receiptCommand ? ("دریافت " + rial(commandAmount) + " از " + comm
     try { await withGuestFeature("expenses", () => deleteExpense(id)); showToast("هزینه حذف شد"); await render(); } catch(e){ showToast(e instanceof Error?e.message:"حذف هزینه ناموفق بود"); }
   }));
   document.querySelector("#more-backup")?.addEventListener("click", async () => {
-    const [products, parties, transactions, expenses, accounts, accountEntries, checks, movements, orders] = await Promise.all([listProducts(), listParties(), listTransactions(), listExpenses(), listAccounts(), (await import("./db")).listAccountEntries(), (await import("./db")).listChecks(), listMovements(), listOrders()]);
-    const payload = { version: 3, exportedAt: Date.now(), products, parties, transactions, expenses, accounts, accountEntries, checks, movements, orders };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `sai-sai-backup-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(url);
-    showToast("فایل پشتیبان آماده شد");
+    try {
+      await withGuestFeature("exports", async () => {
+        const [products, parties, transactions, expenses, accounts, accountEntries, checks, movements, orders] = await Promise.all([listProducts(), listParties(), listTransactions(), listExpenses(), listAccounts(), (await import("./db")).listAccountEntries(), (await import("./db")).listChecks(), listMovements(), listOrders()]);
+        const payload = { version: 3, exportedAt: Date.now(), products, parties, transactions, expenses, accounts, accountEntries, checks, movements, orders };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `sai-sai-backup-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(url);
+        showToast("فایل پشتیبان آماده شد");
+      });
+    } catch (e) { showToast(e instanceof Error ? e.message : "خروجی پشتیبان ناموفق بود"); }
   });
   document.querySelector("#more-restore")?.addEventListener("click", () => { document.body.insertAdjacentHTML("beforeend", backupRestoreModal()); const m=document.querySelector<HTMLElement>("#backup-restore-modal")!; m.querySelector("#backup-restore-close")?.addEventListener("click",()=>m.remove()); m.querySelector("#backup-restore-submit")?.addEventListener("click",async()=>{ try { const input=m.querySelector<HTMLInputElement>("#backup-file")!; const file=input.files?.[0]; if(!file) throw new Error("فایل پشتیبان را انتخاب کنید"); if(!confirm("اطلاعات فعلی با این پشتیبان جایگزین می‌شود. ادامه می‌دهید؟")) return; const data=JSON.parse(await file.text()); if(!Array.isArray(data.products)||!Array.isArray(data.parties)||!Array.isArray(data.transactions)) throw new Error("فایل پشتیبان معتبر نیست"); const db=await import("./db"); await db.restoreBackup(data); m.remove(); showToast("بازیابی با موفقیت انجام شد"); await render(); } catch(e){showToast(e instanceof Error?e.message:"بازیابی ناموفق بود");} }); });
 
