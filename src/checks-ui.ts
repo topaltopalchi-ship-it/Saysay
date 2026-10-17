@@ -1,5 +1,6 @@
 import { addCheck, listChecks, updateCheck, deleteCheck, clearCheck, listAccounts, listParties } from "./db";
 import { formatMoney, getCurrencyLabel, moneyInputValue, parseMoneyInput } from "./settings";
+import { withGuestFeature } from "./guest-quota";
 import type { Check, CheckDirection, CheckStatus } from "./domain";
 
 const rial = (v: number) => formatMoney(v);
@@ -55,7 +56,7 @@ export async function bindCheckModal(modal: HTMLElement, direction: CheckDirecti
       if(!issue||!due||due<issue||amount<=0) throw new Error("مبلغ و تاریخ‌های چک را بررسی کنید");
       const values: Omit<Check, "id" | "createdAt"> = {direction,number:(modal.querySelector<HTMLInputElement>("#check-number")?.value||"").trim(),bank:(modal.querySelector<HTMLInputElement>("#check-bank")?.value||"").trim(),issuerName:(modal.querySelector<HTMLInputElement>("#check-issuer")?.value||"").trim(),amount,issueDate:issue,dueDate:due,status:"pending",partyId:(modal.querySelector<HTMLSelectElement>("#check-party")?.value||undefined),accountId:(modal.querySelector<HTMLSelectElement>("#check-account")?.value||undefined),description:(modal.querySelector<HTMLInputElement>("#check-description")?.value||"").trim()};
       const editId = modal.dataset.editId;
-      if (editId) await updateCheck(editId, values); else await addCheck(values);
+      if (editId) await withGuestFeature("checks", () => updateCheck(editId, values)); else await withGuestFeature("checks", () => addCheck(values));
       modal.remove();done(editId ? "چک ویرایش شد" : "چک ثبت شد");
     } catch(e){done(e instanceof Error?e.message:"ثبت چک ناموفق بود");}
   });
@@ -63,10 +64,10 @@ export async function bindCheckModal(modal: HTMLElement, direction: CheckDirecti
 export async function bindCheckActions(done:(m:string)=>void) {
   document.querySelectorAll<HTMLElement>("[data-check-delete]").forEach(button => button.addEventListener("click", async () => {
     const id=button.dataset.checkDelete||""; const check=(await listChecks()).find(x=>x.id===id); if(!check||!confirm("این چک حذف شود؟")) return;
-    try { await deleteCheck(id); done("چک حذف شد"); } catch(e) { done(e instanceof Error?e.message:"حذف چک ناموفق بود"); }
+    try { await withGuestFeature("checks", () => deleteCheck(id)); done("چک حذف شد"); } catch(e) { done(e instanceof Error?e.message:"حذف چک ناموفق بود"); }
     window.dispatchEvent(new Event("sai-sai-refresh"));
   }));
 }
 export async function bindCheckStatuses(done:(m:string)=>void) {
-  document.querySelectorAll<HTMLSelectElement>(".check-status").forEach(s=>s.addEventListener("change",async()=>{const id=s.dataset.checkId||""; if(s.value==="cleared"){ const accounts=await listAccounts(); const check=(await listChecks()).find(x=>x.id===id); if(!check){done("چک پیدا نشد");return;} const accountId=check.accountId||accounts[0]?.id||""; if(!accountId) throw new Error("برای وصول چک حداقل یک حساب مالی بسازید"); await clearCheck(id,accountId); } else { await updateCheck(id,{status:s.value as CheckStatus}); } done("وضعیت چک به‌روزرسانی شد");}));
+  document.querySelectorAll<HTMLSelectElement>(".check-status").forEach(s=>s.addEventListener("change",async()=>{const id=s.dataset.checkId||""; if(s.value==="cleared"){ const accounts=await listAccounts(); const check=(await listChecks()).find(x=>x.id===id); if(!check){done("چک پیدا نشد");return;} const accountId=check.accountId||accounts[0]?.id||""; if(!accountId) throw new Error("برای وصول چک حداقل یک حساب مالی بسازید"); await withGuestFeature("checks", () => clearCheck(id,accountId)); } else { await withGuestFeature("checks", () => updateCheck(id,{status:s.value as CheckStatus})); } done("وضعیت چک به‌روزرسانی شد");}));
 }
