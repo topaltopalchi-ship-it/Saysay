@@ -1,4 +1,4 @@
-export type GuestFeature = "sales" | "purchases" | "inventory" | "people" | "checks" | "cash" | "orders" | "expenses" | "assistant" | "reports" | "marketRates" | "calculator" | "voiceQuery";
+export type GuestFeature = "sales" | "purchases" | "inventory" | "people" | "checks" | "cash" | "orders" | "expenses" | "assistant" | "reports" | "marketRates" | "calculator" | "voiceQuery" | "exports";
 
 const LIMIT = 10;
 const PREFIX = "sai-sai-guest-quota-v1:";
@@ -16,6 +16,7 @@ const LABELS: Record<GuestFeature, string> = {
   marketRates: "دریافت نرخ لحظه‌ای بازار",
   calculator: "ماشین حساب",
   voiceQuery: "از سای‌سای بپرس؛ پرسش هوشمند صوتی",
+  exports: "تمام خروجی‌ها (فاکتور، گزارش و پشتیبان)",
 };
 
 function isGuestMode(): boolean {
