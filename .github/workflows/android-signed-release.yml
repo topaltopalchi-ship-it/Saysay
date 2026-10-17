@@ -34,8 +34,6 @@ jobs:
         run: npm install
 
       - name: Build web
-        env:
-          VITE_CAFEBAZAAR_RSA_PUBLIC_KEY: ${{ secrets.CAFEBAZAAR_RSA_PUBLIC_KEY }}
         run: npm run build
 
       - name: Generate Android project
@@ -43,26 +41,6 @@ jobs:
 
       - name: Sync Capacitor
         run: npx cap sync android
-
-      - name: Remove CafeBazaar-only payment permission for Myket
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-          p = Path("android/app/src/main/AndroidManifest.xml")
-          s = p.read_text()
-          permission = "com.farsitel.bazaar.permission.PAY_THROUGH_BAZAAR"
-          # Tell Android's manifest merger to remove this permission even if a dependency adds it.
-          if 'xmlns:tools=' not in s:
-              s = re.sub(r'(<manifest\b)', r'\1 xmlns:tools="http://schemas.android.com/tools"', s, count=1)
-          marker = f'<uses-permission android:name="{permission}" tools:node="remove" />'
-          if permission not in s:
-              s = s.replace("</manifest>", f"    {marker}\n</manifest>")
-          else:
-              s = re.sub(r'<uses-permission[^>]*android:name="' + re.escape(permission) + r'"[^>]*/>', marker, s)
-          p.write_text(s)
-          print("Added manifest-merger removal rule for " + permission)
-          PY
 
       - name: Increment Android version for Myket
 
@@ -72,51 +50,16 @@ jobs:
           import re
           p = Path("android/app/build.gradle")
           s = p.read_text()
-          s, n = re.subn(r'versionCode\s+\d+', 'versionCode 6', s, count=1)
+          s, n = re.subn(r'versionCode\s+\d+', 'versionCode 7', s, count=1)
           if n != 1:
               raise SystemExit("Could not find Android versionCode in generated build.gradle")
-          s, n = re.subn(r'versionName\s+"[^"]+"', 'versionName "0.1.8"', s, count=1)
+          s, n = re.subn(r'versionName\s+"[^"]+"', 'versionName "0.1.9"', s, count=1)
           if n != 1:
-              s, n = re.subn(r"versionName\s+'[^']+'", "versionName '0.1.8'", s, count=1)
+              s, n = re.subn(r"versionName\s+'[^']+'", "versionName '0.1.9'", s, count=1)
           if n != 1:
               raise SystemExit("Could not find Android versionName in generated build.gradle")
           p.write_text(s)
-          print("Android version set to versionCode 6 / versionName 0.1.8")
-          PY
-
-      - name: Ensure JitPack repository for CafeBazaar Poolakey
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-
-          jitpack = "maven { url 'https://jitpack.io' }"
-          settings = Path("android/settings.gradle")
-          source = settings.read_text() if settings.exists() else ""
-
-          # Prefer centralized dependency repositories when this Gradle template has them.
-          if "dependencyResolutionManagement" in source:
-              start = source.index("dependencyResolutionManagement")
-              match = re.search(r'repositories\s*\{', source[start:])
-              if not match:
-                  raise SystemExit("dependencyResolutionManagement exists but has no repositories block")
-              pos = start + match.end()
-              if jitpack not in source:
-                  source = source[:pos] + "\n        " + jitpack + source[pos:]
-                  settings.write_text(source)
-          else:
-              # Older Capacitor templates keep dependency repositories in the root build.gradle.
-              root = Path("android/build.gradle")
-              root_source = root.read_text() if root.exists() else ""
-              if jitpack not in root_source:
-                  match = re.search(r'(allprojects\s*\{[\s\S]*?repositories\s*\{)', root_source)
-                  if match:
-                      root_source = root_source[:match.end()] + "\n        " + jitpack + root_source[match.end():]
-                  else:
-                      root_source += "\n\nallprojects {\n    repositories {\n        " + jitpack + "\n    }\n}\n"
-                  root.write_text(root_source)
-
-          print("JitPack repository configured for the generated Android project.")
+          print("Android version set to versionCode 7 / versionName 0.1.9")
           PY
 
       - name: Ensure Android camera and speech permissions
@@ -209,32 +152,6 @@ jobs:
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./gradlew assembleRelease bundleRelease --no-daemon
-
-      - name: Generate Bazaar BIN signature
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          curl -fL --retry 3 -o bundlesigner-0.1.13.jar https://github.com/cafebazaar/bundle-signer/releases/download/v0.1.13/bundlesigner-0.1.13.jar
-          mkdir -p bazaar-bin
-          java -jar bundlesigner-0.1.13.jar genbin -v \
-            --bundle android/app/build/outputs/bundle/release/*.aab \
-            --bin bazaar-bin \
-            --v2-signing-enabled true \
-            --v3-signing-enabled false \
-            --ks android/app/sai-sai-upload.jks \
-            --ks-pass env:KEYSTORE_PASSWORD \
-            --ks-key-alias "$KEY_ALIAS" \
-            --key-pass env:KEY_PASSWORD
-          test -n "$(find bazaar-bin -maxdepth 1 -type f -name '*.bin' -print -quit)"
-
-      - name: Upload Bazaar BIN
-        uses: actions/upload-artifact@v4
-        with:
-          name: sai-sai-bazaar-bin
-          path: bazaar-bin/*.bin
-          if-no-files-found: error
 
       - name: Verify APK signature
         run: |
