@@ -37,20 +37,13 @@ function showLimitDialog(feature: GuestFeature): void {
   modal.innerHTML = `<section class="modal auth-modal" dir="rtl">
     <div class="auth-mark">س</div>
     <h2>سهمیه رایگان این قابلیت تمام شد</h2>
-    <p class="muted">استفاده رایگان از «${LABELS[feature]}» به ۱۰ بار رسیده است. برای ادامه، وارد حساب شوید یا اشتراک تهیه کنید. سایر بخش‌های سای‌سای همچنان در دسترس‌اند.</p>
-    <button id="guest-quota-account" class="primary-button wide" type="button">ورود / ساخت حساب</button>
-    <button id="guest-quota-subscription" class="secondary-button wide" type="button">مدیریت اشتراک و خرید</button>
-    <button id="guest-quota-close" class="auth-recover-link" type="button">فعلاً نه</button>
+    <p class="muted">سهمیه رایگان «${LABELS[feature]}» تمام شده است. برای ادامه، حساب بسازید یا وارد حساب خود شوید؛ سپس پنجره خرید اشتراک باز می‌شود.</p>
+    <button id="guest-quota-account" class="primary-button wide" type="button">ساخت حساب / ورود و خرید اشتراک</button>
   </section>`;
   document.body.appendChild(modal);
-  modal.querySelector("#guest-quota-close")?.addEventListener("click", () => modal.remove());
   modal.querySelector("#guest-quota-account")?.addEventListener("click", () => {
     modal.remove();
     window.dispatchEvent(new CustomEvent("sai-sai-quota-account"));
-  });
-  modal.querySelector("#guest-quota-subscription")?.addEventListener("click", () => {
-    modal.remove();
-    window.dispatchEvent(new CustomEvent("sai-sai-quota-subscription"));
   });
 }
 
