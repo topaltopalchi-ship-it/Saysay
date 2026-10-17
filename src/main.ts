@@ -1294,8 +1294,8 @@ function paywall(subscription: Subscription): string {
 function showSubscription(subscription: Subscription): void {
   const expiry = subscription.expiresAt ? dateLabel(subscription.expiresAt) : "نامشخص";
   const statusLabel = subscription.status === "active"
-    ? (subscription.isTrial ? "دورهٔ آزمایشی رایگان فعال است" : "اشتراک پولی فعال است")
-    : subscription.status === "expired" ? "دورهٔ رایگان یا اشتراک پایان یافته است"
+    ? "اشتراک پولی فعال است"
+    : subscription.status === "expired" ? "اشتراک فعالی وجود ندارد"
     : subscription.status === "pending" ? "خرید در انتظار تأیید است" : "اشتراک فعالی وجود ندارد";
   document.querySelector("#sub-modal")?.remove();
   document.body.insertAdjacentHTML("beforeend", `<div class="modal-backdrop" id="sub-modal"><section class="modal"><button class="modal-close" id="sub-close">×</button><span class="eyebrow">اشتراک سای‌سای</span><h2>مدیریت اشتراک</h2><div class="price-card"><div><strong>پلن ماهانه</strong><span>${statusLabel}</span></div><b>${subscription.status === "active" ? "فعال" : "غیرفعال"}</b></div><p class="muted">اعتبار تا: ${expiry}</p><p class="muted">اشتراک ${money.format(subscription.durationDays || 30)}روزه · ${money.format(subscription.priceToman || 100000)} تومان</p><p class="muted">پرداخت امن درون‌برنامه‌ای کافه‌بازار؛ اشتراک فقط پس از تأیید سرور فعال می‌شود.</p><p class="auth-error" id="sub-error" hidden></p><button class="primary-button wide" id="sub-buy">خرید / تمدید اشتراک — ${money.format(subscription.priceToman || 100000)} تومان</button></section></div>`);
