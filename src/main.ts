@@ -40,8 +40,15 @@ window.addEventListener("sai-sai-quota-account", () => {
   authScreen(() => { localStorage.setItem("sai-sai-unlocked", "1"); void render(); });
 });
 window.addEventListener("sai-sai-quota-subscription", async () => {
-  try { showSubscription(await getSubscription()); }
-  catch (e) { showSubscriptionError(e instanceof Error ? e.message : "برای خرید اشتراک ابتدا وارد حساب شوید."); }
+  const openSubscription = async () => {
+    try { showSubscription(await getSubscription()); }
+    catch (e) { showSubscriptionError(e instanceof Error ? e.message : "وضعیت اشتراک دریافت نشد."); }
+  };
+  if (!localStorage.getItem("sai-sai-account-username")) {
+    authScreen(() => { localStorage.setItem("sai-sai-unlocked", "1"); void openSubscription(); });
+    return;
+  }
+  await openSubscription();
 });
 
 function numericValue(value: string | number | undefined | null): number {
