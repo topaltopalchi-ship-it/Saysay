@@ -964,7 +964,7 @@ function bindOrderActions(): void {
   }));
   document.querySelectorAll<HTMLElement>("[data-order-delete]").forEach(b => b.addEventListener("click", async () => {
     const id = b.dataset.orderDelete || ""; if (!id || !confirm("این سفارش حذف شود؟")) return;
-    try { await cancelOrderReminder(id); await dbDeleteOrder(id); showToast("سفارش حذف شد"); await render(); } catch(e) { showToast(e instanceof Error ? e.message : "حذف سفارش ناموفق بود"); }
+    try { await cancelOrderReminder(id); await withGuestFeature("orders", () => dbDeleteOrder(id)); showToast("سفارش حذف شد"); await render(); } catch(e) { showToast(e instanceof Error ? e.message : "حذف سفارش ناموفق بود"); }
   }));
   document.querySelectorAll<HTMLElement>("[data-order-complete],[data-order-cancel]").forEach(b => b.addEventListener("click", async () => {
     const id = b.dataset.orderComplete || b.dataset.orderCancel || "";
@@ -993,7 +993,7 @@ function bindOrderActions(): void {
         showToast(e instanceof Error ? e.message : "ثبت فاکتور سفارش ناموفق بود");
       }
     } else {
-      await dbUpdateOrder({ ...order, status: "cancelled" });
+      await withGuestFeature("orders", () => dbUpdateOrder({ ...order, status: "cancelled" }));
       await cancelOrderReminder(order.id);
       showToast("سفارش لغو شد");
     }
