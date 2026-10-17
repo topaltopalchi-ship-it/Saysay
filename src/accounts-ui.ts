@@ -1,6 +1,7 @@
 import { addAccount, updateAccount, deleteAccount, addAccountEntry, getAccountBalances, getAccountLedger, listAccounts, listAccountEntries, transferBetweenAccounts } from "./db";
 import { formatMoney, getCurrencyLabel, moneyInputValue, parseMoneyInput } from "./settings";
 import type { Account, AccountType } from "./domain";
+import { withGuestFeature } from "./guest-quota";
 
 const money = new Intl.NumberFormat("fa-IR");
 const dateTime = new Intl.DateTimeFormat("fa-IR-u-ca-persian", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
@@ -43,9 +44,9 @@ export async function bindAccountModal(modal: HTMLElement, done: (message: strin
       if (!name) throw new Error("نام حساب الزامی است");
       const editId = modal.dataset.editId;
       if (editId) {
-        await updateAccount({ id: editId, name, type, openingBalance, createdAt: Number(modal.dataset.createdAt || Date.now()) });
+        await withGuestFeature("cash", () => updateAccount({ id: editId, name, type, openingBalance, createdAt: Number(modal.dataset.createdAt || Date.now()) }));
       } else {
-        await addAccount({ name, type, openingBalance });
+        await withGuestFeature("cash", () => addAccount({ name, type, openingBalance }));
       }
       modal.remove(); done(editId ? "تغییرات حساب ذخیره شد" : "حساب با موفقیت ثبت شد");
     } catch (e) { done(e instanceof Error ? e.message : "ثبت حساب ناموفق بود"); }
@@ -64,7 +65,7 @@ export async function bindTransferModal(modal: HTMLElement, done: (message: stri
       if (!from || !to || amount <= 0) throw new Error("حساب‌ها و مبلغ را بررسی کنید");
       if (from === to) throw new Error("حساب مبدأ و مقصد باید متفاوت باشند");
       if ((balances[from] ?? 0) < amount) throw new Error("موجودی حساب مبدأ کافی نیست");
-      await transferBetweenAccounts(from, to, amount, description);
+      await withGuestFeature("cash", () => transferBetweenAccounts(from, to, amount, description));
       modal.remove(); done("انتقال با موفقیت ثبت شد");
     } catch (e) { done(e instanceof Error ? e.message : "ثبت انتقال ناموفق بود"); }
   });
@@ -140,7 +141,7 @@ export async function bindAccountLedger(modal: HTMLElement): Promise<void> {
     const description = prompt("شرح انتقال", source.description || "انتقال بین حساب‌ها");
     if (description === null) return;
     try {
-      await (await import("./db")).updateTransfer(transferId, amount, description.trim() || "انتقال بین حساب‌ها");
+      await withGuestFeature("cash", async () => (await import("./db")).updateTransfer(transferId, amount, description.trim() || "انتقال بین حساب‌ها"));
       modal.remove();
       window.dispatchEvent(new Event("sai-sai-refresh"));
     } catch (e) { alert(e instanceof Error ? e.message : "ویرایش انتقال ناموفق بود"); }
@@ -150,7 +151,7 @@ export async function bindAccountLedger(modal: HTMLElement): Promise<void> {
     const transferId = button.dataset.transferDelete || "";
     if (!transferId || !confirm("این انتقال از هر دو حساب حذف شود؟")) return;
     try {
-      await (await import("./db")).deleteTransfer(transferId);
+      await withGuestFeature("cash", async () => (await import("./db")).deleteTransfer(transferId));
       modal.remove();
       window.dispatchEvent(new Event("sai-sai-refresh"));
     } catch (e) { alert(e instanceof Error ? e.message : "حذف انتقال ناموفق بود"); }
@@ -160,7 +161,7 @@ export async function bindAccountLedger(modal: HTMLElement): Promise<void> {
     const id = button.dataset.accountEntryDelete || "";
     if (!id || !confirm("این گردش حساب حذف شود؟")) return;
     try {
-      await (await import("./db")).deleteAccountEntry(id);
+      await withGuestFeature("cash", async () => (await import("./db")).deleteAccountEntry(id));
       modal.remove();
       const toast = document.querySelector<HTMLDivElement>("#toast");
       if (toast) { toast.textContent = "گردش حساب حذف شد"; toast.classList.add("show"); window.setTimeout(() => toast.classList.remove("show"), 2400); }
@@ -192,9 +193,9 @@ export async function bindAccountEntryModal(modal: HTMLElement, done: (message: 
       const editId = modal.dataset.editId;
       if (!accountId || amount <= 0) throw new Error("حساب و مبلغ را بررسی کنید");
       if (editId) {
-        await (await import("./db")).updateAccountEntry(editId, { type, amount, description });
+        await withGuestFeature("cash", async () => (await import("./db")).updateAccountEntry(editId, { type, amount, description }));
       } else {
-        await addAccountEntry({ accountId, date: Date.now(), type, amount: type === "withdraw" ? -amount : amount, description });
+        await withGuestFeature("cash", () => addAccountEntry({ accountId, date: Date.now(), type, amount: type === "withdraw" ? -amount : amount, description }));
       }
       modal.remove();
       done(editId ? "گردش حساب ویرایش شد" : "گردش حساب ثبت شد");
