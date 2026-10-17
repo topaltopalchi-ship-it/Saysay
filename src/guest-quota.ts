@@ -20,8 +20,10 @@ const LABELS: Record<GuestFeature, string> = {
 };
 
 function isGuestMode(): boolean {
-  return localStorage.getItem("sai-sai-unlocked") === "1"
-    && !localStorage.getItem("sai-sai-account-username");
+  // Access/unlock state is managed separately from account status. Treat every
+  // installation without an account username as a guest so a stale/missing
+  // unlock marker cannot silently disable the free-use limit.
+  return !localStorage.getItem("sai-sai-account-username")?.trim();
 }
 
 function usage(feature: GuestFeature): number {
