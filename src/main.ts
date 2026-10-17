@@ -2,6 +2,7 @@ import "./style.css";
 import "./ui-entrypoints";
 import { scanBarcode } from "./barcode-scanner";
 import { authScreen, signOut, welcomeScreen } from "./auth";
+import { withGuestFeature } from "./guest-quota";
 import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import { Filesystem, Directory } from "@capacitor/filesystem";
@@ -34,6 +35,14 @@ const navItems: Array<[Tab, string, string]> = [
   ["orders", "سفارشات", "▣"], ["inventory", "موجودی", "▤"], ["people", "اشخاص", "♙"], ["reports", "گزارش‌ها", "◫"], ["more", "خزانه", "▣"], ["checks", "چک‌ها", "✓"],
 ];
 const money = new Intl.NumberFormat("fa-IR");
+
+window.addEventListener("sai-sai-quota-account", () => {
+  authScreen(() => { localStorage.setItem("sai-sai-unlocked", "1"); void render(); });
+});
+window.addEventListener("sai-sai-quota-subscription", async () => {
+  try { showSubscription(await getSubscription()); }
+  catch (e) { showSubscriptionError(e instanceof Error ? e.message : "برای خرید اشتراک ابتدا وارد حساب شوید."); }
+});
 
 function numericValue(value: string | number | undefined | null): number {
   const normalized = String(value ?? "")
@@ -746,9 +755,9 @@ async function openSaleModal(existing?: Transaction): Promise<void> {
       const transactionLines: TransactionLine[] = data.map(x => ({ productId: x.productId, quantity: x.quantity, unitPrice: x.unitPrice, discount: x.discount }));
       const amount = data.reduce((sum, x) => sum + Math.max(0, x.quantity * x.unitPrice - x.discount), 0);
       const paidValue = Math.min(amount, parseMoneyInput(paid.value));
-      const savedSale = existing
-        ? await updateTransaction(existing.id, { date: Date.now(), partyId: undefined, customerName, accountId: modal.querySelector<HTMLSelectElement>("#sale-account")!.value || undefined, description: `فروش ${data.length} قلم کالا`, lines: transactionLines, paid: paidValue })
-        : await addSale({ date: Date.now(), partyId: undefined, customerName, accountId: modal.querySelector<HTMLSelectElement>("#sale-account")!.value || undefined, description: `فروش ${data.length} قلم کالا`, lines: transactionLines, paid: paidValue });
+      const savedSale = await withGuestFeature("sales", () => existing
+        ? updateTransaction(existing.id, { date: Date.now(), partyId: undefined, customerName, accountId: modal.querySelector<HTMLSelectElement>("#sale-account")!.value || undefined, description: `فروش ${data.length} قلم کالا`, lines: transactionLines, paid: paidValue })
+        : addSale({ date: Date.now(), partyId: undefined, customerName, accountId: modal.querySelector<HTMLSelectElement>("#sale-account")!.value || undefined, description: `فروش ${data.length} قلم کالا`, lines: transactionLines, paid: paidValue }));
       modal.remove();
       await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
       try { await openInvoice(savedSale); } catch (error) { showToast(error instanceof Error ? `فاکتور ثبت شد، اما نمایش فاکتور ناموفق بود: ${error.message}` : "فاکتور ثبت شد، اما نمایش فاکتور ناموفق بود"); }
@@ -1018,7 +1027,7 @@ function bindAdjustmentModal(): void {
     try {
       const productId = modal.querySelector<HTMLSelectElement>("#adjust-product")!.value;
       const quantity = signedNumericValue(modal.querySelector<HTMLInputElement>("#adjust-qty")!.value);
-      await addStockAdjustment({ date: Date.now(), productId, quantity, description: modal.querySelector<HTMLInputElement>("#adjust-desc")!.value.trim() || "اصلاح موجودی" });
+      await withGuestFeature("inventory", () => addStockAdjustment({ date: Date.now(), productId, quantity, description: modal.querySelector<HTMLInputElement>("#adjust-desc")!.value.trim() || "اصلاح موجودی" }));
       modal.remove(); showToast("اصلاح موجودی ثبت شد"); await render();
     } catch (e) { showToast(e instanceof Error ? e.message : "اصلاح موجودی ناموفق بود"); }
   });
@@ -1037,7 +1046,7 @@ function productModal(product?: Product): string {
 async function saveVoiceProduct(draft: VoiceProductDraft): Promise<void> {
   if (!draft.name) { showToast("نام کالا از صدا تشخیص داده نشد؛ دوباره واضح‌تر بگویید"); return; }
   try {
-    await addProduct({ name:draft.name, sku:draft.sku, unit:draft.unit, purchasePrice:draft.purchasePrice, salePrice:draft.salePrice, lowStock:draft.lowStock }, draft.initialStock);
+    await withGuestFeature("inventory", () => addProduct({ name:draft.name, sku:draft.sku, unit:draft.unit, purchasePrice:draft.purchasePrice, salePrice:draft.salePrice, lowStock:draft.lowStock }, draft.initialStock));
     showToast("کالا با صدا با موفقیت ثبت شد");
     await render();
   } catch (e) { showToast(e instanceof Error ? e.message : "ثبت کالای صوتی ناموفق بود"); }
@@ -1067,10 +1076,10 @@ function bindProductModal(): void {
       if (editId) {
         const existing = (await listProducts()).find(p => p.id === editId);
         if (!existing) throw new Error("کالا پیدا نشد");
-        await updateProduct({ ...existing, ...values });
+        await withGuestFeature("inventory", () => updateProduct({ ...existing, ...values }));
       } else {
         const initialStock = Math.max(0, numericValue(modal.querySelector<HTMLInputElement>("#p-initial-stock")?.value));
-        await addProduct(values, initialStock);
+        await withGuestFeature("inventory", () => addProduct(values, initialStock));
       }
       modal.remove(); showToast(editId ? "تغییرات کالا ذخیره شد" : "کالا با موفقیت ثبت شد"); await render();
     } catch (e) { showToast(e instanceof Error ? e.message : "ذخیره کالا ناموفق بود"); }
@@ -1185,9 +1194,9 @@ function bindExpenseModal(): void {
       if (editId) {
         const existingExpense = (await listExpenses()).find(x => x.id === editId);
         if (!existingExpense) throw new Error("هزینه پیدا نشد");
-        await updateExpense({ ...existingExpense, ...expenseValues });
+        await withGuestFeature("expenses", () => updateExpense({ ...existingExpense, ...expenseValues }));
       } else {
-        await addExpense(expenseValues);
+        await withGuestFeature("expenses", () => addExpense(expenseValues));
       }
       modal.remove(); showToast(modal.dataset.editId ? "هزینه ویرایش شد" : "هزینه ثبت شد"); await render();
     } catch (e) { showToast(e instanceof Error ? e.message : "ثبت هزینه ناموفق بود"); }
@@ -1218,7 +1227,7 @@ async function openSettlement(type: "receipt" | "payment", existing?: Transactio
       const amount = parseMoneyInput(modal.querySelector<HTMLInputElement>("#settlement-amount")!.value);
       if (!partyId || amount <= 0) throw new Error("شخص و مبلغ را وارد کنید");
       const accountId = modal.querySelector<HTMLSelectElement>("#settlement-account")!.value || undefined;
-      const description = modal.querySelector<HTMLInputElement>("#settlement-description")!.value.trim() || (type === "receipt" ? "دریافت وجه" : "پرداخت وجه"); if (modal.dataset.editId) await updateTransaction(modal.dataset.editId, { date: Date.now(), partyId, accountId, description, lines: [], paid: amount }); else await addSettlement({ type, date: Date.now(), partyId, accountId, amount, description });
+      const description = modal.querySelector<HTMLInputElement>("#settlement-description")!.value.trim() || (type === "receipt" ? "دریافت وجه" : "پرداخت وجه"); if (modal.dataset.editId) await withGuestFeature("cash", () => updateTransaction(modal.dataset.editId!, { date: Date.now(), partyId, accountId, description, lines: [], paid: amount })); else await withGuestFeature("cash", () => addSettlement({ type, date: Date.now(), partyId, accountId, amount, description }));
       modal.remove(); showToast(existing ? "تغییرات ذخیره شد" : "ثبت شد"); await render();
     } catch (e) { showToast(e instanceof Error ? e.message : "ثبت ناموفق بود"); }
   });
@@ -1244,9 +1253,9 @@ function bindPartyModal(): void {
       if (editId) {
         const existing = (await listParties()).find(p => p.id === editId);
         if (!existing) throw new Error("شخص پیدا نشد");
-        await updateParty({ ...existing, ...values });
+        await withGuestFeature("people", () => updateParty({ ...existing, ...values }));
       } else {
-        await addParty(values);
+        await withGuestFeature("people", () => addParty(values));
       }
       modal.remove(); showToast(modal.dataset.editId ? "تغییرات شخص ذخیره شد" : "شخص با موفقیت ثبت شد"); await render();
     } catch (e) { showToast(e instanceof Error ? e.message : "ذخیره شخص ناموفق بود"); }
@@ -1693,7 +1702,7 @@ const commandParty = parties.map(p => ({ p, n: normalized(p.name) }))
   .filter(x => x.n && (q.includes(x.n) || x.n.split(/\s+/).some(part => part.length >= 3 && q.includes(part))))
   .sort((a,b) => b.n.length-a.n.length)[0]?.p;
 if (!commandParty) return "نام مشتری یا تأمین‌کننده را در دستور دریافت یا پرداخت بگویید.";
-await addSettlement({ type: receiptCommand ? "receipt" : "payment", date: Date.now(), partyId: commandParty.id, amount: commandAmount, description: receiptCommand ? "دریافت صوتی" : "پرداخت صوتی" });
+await withGuestFeature("cash", () => addSettlement({ type: receiptCommand ? "receipt" : "payment", date: Date.now(), partyId: commandParty.id, amount: commandAmount, description: receiptCommand ? "دریافت صوتی" : "پرداخت صوتی" }));
 return receiptCommand ? ("دریافت " + rial(commandAmount) + " از " + commandParty.name + " ثبت شد.") : ("پرداخت " + rial(commandAmount) + " به " + commandParty.name + " ثبت شد.");
   }
 
@@ -1792,7 +1801,7 @@ return receiptCommand ? ("دریافت " + rial(commandAmount) + " از " + comm
     event.stopPropagation();
     const id = button.dataset.productDelete; const product = id ? (await listProducts()).find(p => p.id === id) : undefined;
     if (!product || !confirm(`کالای «${product.name}» حذف شود؟`)) return;
-    try { await deleteProduct(product.id); showToast("کالا حذف شد"); await render(); } catch (e) { showToast(e instanceof Error ? e.message : "حذف کالا ناموفق بود"); }
+    try { await withGuestFeature("inventory", () => deleteProduct(product.id)); showToast("کالا حذف شد"); await render(); } catch (e) { showToast(e instanceof Error ? e.message : "حذف کالا ناموفق بود"); }
   }));
   document.querySelector("#new-party")?.addEventListener("click", () => { document.body.insertAdjacentHTML("beforeend", partyModal()); bindPartyModal(); });
   document.querySelectorAll<HTMLElement>("[data-party-edit]").forEach(button => button.addEventListener("click", async event => {
@@ -1806,7 +1815,7 @@ return receiptCommand ? ("دریافت " + rial(commandAmount) + " از " + comm
     event.stopPropagation();
     const id = button.dataset.partyDelete; const party = id ? (await listParties()).find(p => p.id === id) : undefined;
     if (!party || !confirm(`شخص «${party.name}» حذف شود؟`)) return;
-    try { await deleteParty(party.id); showToast("شخص حذف شد"); await render(); } catch (e) { showToast(e instanceof Error ? e.message : "حذف شخص ناموفق بود"); }
+    try { await withGuestFeature("people", () => deleteParty(party.id)); showToast("شخص حذف شد"); await render(); } catch (e) { showToast(e instanceof Error ? e.message : "حذف شخص ناموفق بود"); }
   }));
   document.querySelector("#new-received-check")?.addEventListener("click", async () => { const [parties,accounts]=await Promise.all([listParties(),listAccounts()]); document.body.insertAdjacentHTML("beforeend", checkModal("received",parties,accounts)); const modal=document.querySelector<HTMLElement>("#check-modal"); if(modal) void bindCheckModal(modal,"received",async m=>{showToast(m);await render();}); });
   document.querySelector("#new-issued-check")?.addEventListener("click", async () => { const [parties,accounts]=await Promise.all([listParties(),listAccounts()]); document.body.insertAdjacentHTML("beforeend", checkModal("issued",parties,accounts)); const modal=document.querySelector<HTMLElement>("#check-modal"); if(modal) void bindCheckModal(modal,"issued",async m=>{showToast(m);await render();}); });
