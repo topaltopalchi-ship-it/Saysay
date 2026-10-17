@@ -15,7 +15,7 @@ import {
   addParty, addProduct, updateProduct, deleteProduct, addSale, addSettlement, addExpense, addStockAdjustment, getDashboard, getStock, updateTransaction, deleteTransaction, updateExpense, deleteExpense,
   listParties, updateParty, deleteParty, listProducts, listTransactions, listExpenses, listMovements, listOrders, listChecks, calculateHistoricalCOGS, repairDataIntegrity, getPartyBalances
 } from "./db";
-import { createMonthlyCheckout, getSubscription, type Subscription } from "./billing";
+import { getSubscription, type Subscription } from "./billing";
 import { lineTotal, type Order, type Party, type Product, type Transaction, type TransactionLine } from "./domain";
 import { formatMoney, getCurrencyUnit, setCurrencyUnit, getCurrencyLabel, parseMoneyInput, moneyInputValue } from "./settings";
 import { openPurchaseModal } from "./purchase-ui";
@@ -50,7 +50,6 @@ async function openAccountThenSubscription(initialMode: "login" | "signup"): Pro
   await openSubscription();
 }
 window.addEventListener("sai-sai-quota-account", () => { void openAccountThenSubscription("signup"); });
-window.addEventListener("sai-sai-quota-subscription", () => { void openAccountThenSubscription("signup"); });
 
 function numericValue(value: string | number | undefined | null): number {
   const normalized = String(value ?? "")
@@ -82,7 +81,7 @@ function setProfessionalMode(value: boolean): void { localStorage.setItem(UI_MOD
 function settingsModal(): string {
   const unit = getCurrencyUnit();
   const professional = isProfessionalMode();
-  return `<div class="modal-backdrop" id="settings-modal"><section class="modal ui-mode-modal"><button class="modal-close" id="settings-close">×</button><span class="eyebrow">تنظیمات سای‌سای</span><h2>تنظیمات پایه</h2><label class="field"><span>واحد نمایش مبلغ</span><select id="currency-unit"><option value="toman" ${unit === "toman" ? "selected" : ""}>تومان</option><option value="rial" ${unit === "rial" ? "selected" : ""}>ریال</option></select></label><label class="professional-toggle"><input id="professional-mode" type="checkbox" ${professional ? "checked" : ""}><span><b>حالت حرفه‌ای</b><small>نمایش گزارش‌ها و ابزارهای مدیریتی؛ این گزینه به‌تنهایی اشتراک پولی را فعال نمی‌کند.</small></span></label><button class="secondary-button wide" id="pricing-settings">🛡️ قیمت‌گذاری و حفظ سرمایه</button><p class="muted" id="account-status">${localStorage.getItem("sai-sai-account-username") ? `حساب متصل: ${localStorage.getItem("sai-sai-account-username")}` : "بدون حساب کاربری؛ برای بررسی اشتراک وارد حساب شوید."}</p><button class="secondary-button wide" id="account-action">${localStorage.getItem("sai-sai-account-username") ? "خروج از حساب" : "ورود / ساخت حساب"}</button><button class="secondary-button wide" id="subscription-settings">مدیریت اشتراک</button><button class="primary-button wide" id="settings-save">ذخیره و اعمال</button></section></div>`;
+  return `<div class="modal-backdrop" id="settings-modal"><section class="modal ui-mode-modal"><button class="modal-close" id="settings-close">×</button><span class="eyebrow">تنظیمات سای‌سای</span><h2>تنظیمات پایه</h2><label class="field"><span>واحد نمایش مبلغ</span><select id="currency-unit"><option value="toman" ${unit === "toman" ? "selected" : ""}>تومان</option><option value="rial" ${unit === "rial" ? "selected" : ""}>ریال</option></select></label><label class="professional-toggle"><input id="professional-mode" type="checkbox" ${professional ? "checked" : ""}><span><b>حالت حرفه‌ای</b><small>نمایش گزارش‌ها و ابزارهای مدیریتی؛ این گزینه به‌تنهایی اشتراک پولی را فعال نمی‌کند.</small></span></label><button class="secondary-button wide" id="pricing-settings">🛡️ قیمت‌گذاری و حفظ سرمایه</button><p class="muted" id="account-status">${localStorage.getItem("sai-sai-account-username") ? `حساب متصل: ${localStorage.getItem("sai-sai-account-username")}` : "بدون حساب کاربری"}</p><button class="secondary-button wide" id="account-action">${localStorage.getItem("sai-sai-account-username") ? "خروج از حساب" : "ورود / ساخت حساب"}</button><button class="primary-button wide" id="settings-save">ذخیره و اعمال</button></section></div>`;
 }
 function bindSettingsModal(): void {
   const modal = document.querySelector<HTMLDivElement>("#settings-modal");
@@ -105,15 +104,6 @@ modal.querySelector("#account-action")?.addEventListener("click", async () => {
 });
   modal.querySelector("#settings-close")?.addEventListener("click", () => modal.remove());
   modal.querySelector("#pricing-settings")?.addEventListener("click", async () => { modal.remove(); document.body.insertAdjacentHTML("beforeend", pricingSettingsModal()); bindPricingSettingsModal(); });
-  modal.querySelector("#subscription-settings")?.addEventListener("click", async () => {
-    modal.remove();
-    try {
-      const subscription = await getSubscription();
-      showSubscription(subscription);
-    } catch (e) {
-      showSubscriptionError(e instanceof Error ? e.message : "وضعیت اشتراک دریافت نشد.");
-    }
-  });
   modal.querySelector("#settings-save")?.addEventListener("click", async () => {
     const unit = modal.querySelector<HTMLSelectElement>("#currency-unit")?.value === "toman" ? "toman" : "rial";
     setCurrencyUnit(unit);
@@ -290,21 +280,12 @@ function bindSellerHelperModal(productsForHelp: Product[], partiesForHelp: Party
 
 function uiModeModal(): string {
   const professional = isProfessionalMode();
-  return `<div class="modal-backdrop" id="ui-mode-modal"><section class="modal ui-mode-modal"><button class="modal-close" id="ui-mode-close">×</button><span class="eyebrow">شخصی‌سازی سای‌سای</span><h2>حالت کاربری</h2><p class="muted">اگر حسابدار نیستید، حالت ساده منوها و گزینه‌های ضروری را خلوت نگه می‌دارد.</p><label class="professional-toggle"><input id="professional-mode" type="checkbox" ${professional ? "checked" : ""}><span><b>حالت حرفه‌ای</b><small>نمایش ابزارهای مدیریتی؛ این گزینه اشتراک پولی را فعال نمی‌کند.</small></span></label><button class="secondary-button wide" id="subscription-settings">مدیریت اشتراک</button><div class="mode-hint">${professional ? "حالت حرفه‌ای فعال است." : "حالت ساده برای استفاده روزمره فعال است."}</div><button class="primary-button wide" id="ui-mode-save">ذخیره و اعمال</button></section></div>`;
+  return `<div class="modal-backdrop" id="ui-mode-modal"><section class="modal ui-mode-modal"><button class="modal-close" id="ui-mode-close">×</button><span class="eyebrow">شخصی‌سازی سای‌سای</span><h2>حالت کاربری</h2><p class="muted">اگر حسابدار نیستید، حالت ساده منوها و گزینه‌های ضروری را خلوت نگه می‌دارد.</p><label class="professional-toggle"><input id="professional-mode" type="checkbox" ${professional ? "checked" : ""}><span><b>حالت حرفه‌ای</b><small>نمایش ابزارهای مدیریتی؛ این گزینه اشتراک پولی را فعال نمی‌کند.</small></span></label><div class="mode-hint">${professional ? "حالت حرفه‌ای فعال است." : "حالت ساده برای استفاده روزمره فعال است."}</div><button class="primary-button wide" id="ui-mode-save">ذخیره و اعمال</button></section></div>`;
 }
 function bindUiModeModal(): void {
   const modal = document.querySelector<HTMLDivElement>("#ui-mode-modal");
   if (!modal) return;
   modal.querySelector("#ui-mode-close")?.addEventListener("click", () => modal.remove());
-  modal.querySelector("#subscription-settings")?.addEventListener("click", async () => {
-    modal.remove();
-    try {
-      const subscription = await getSubscription();
-      showSubscription(subscription);
-    } catch (e) {
-      showSubscriptionError(e instanceof Error ? e.message : "وضعیت اشتراک دریافت نشد.");
-    }
-  });
   modal.querySelector("#ui-mode-save")?.addEventListener("click", async () => {
     const enabled = modal.querySelector<HTMLInputElement>("#professional-mode")?.checked ?? false;
     setProfessionalMode(enabled);
@@ -375,7 +356,7 @@ function layout(content: string, subscription: Subscription): void {
         <div class="brand-block"><img class="brand-logo" src="/icon-192.svg" alt="لوگوی سای‌سای"><div><span class="eyebrow">مدیریت مالی و فروش</span><h1>سای‌سای</h1></div></div>
         <div class="header-actions">
           <label class="header-currency" aria-label="انتخاب واحد پول"><span>واحد پول</span><select id="header-currency-unit"><option value="toman" ${getCurrencyUnit() === "toman" ? "selected" : ""}>تومان</option><option value="rial" ${getCurrencyUnit() === "rial" ? "selected" : ""}>ریال</option></select></label>
-          <span class="plan-pill ${subscription.status}">${isGuestMode() ? "مهمان · سهمیه محدود" : subscription.status === "active" ? "اشتراک فعال" : "اشتراک لازم است"}</span>
+          <span class="plan-pill ${subscription.status}">${isGuestMode() ? "مهمان · سهمیه محدود" : "نسخه رایگان"}</span>
           <button class="icon-button" id="settings" aria-label="حالت کاربری">⚙</button>
         </div>
       </header>
@@ -387,7 +368,6 @@ function layout(content: string, subscription: Subscription): void {
     </main>`;
   document.querySelector<HTMLSelectElement>("#header-currency-unit")?.addEventListener("change", async event => { const unit = (event.currentTarget as HTMLSelectElement).value === "toman" ? "toman" : "rial"; setCurrencyUnit(unit); await render(); showToast("واحد پول سیستم روی " + (unit === "toman" ? "تومان" : "ریال") + " تنظیم شد"); });
   document.querySelector<HTMLButtonElement>("#settings")?.addEventListener("click", () => { document.body.insertAdjacentHTML("beforeend", settingsModal()); bindSettingsModal(); });
-  document.querySelectorAll<HTMLButtonElement>("[data-subscribe]").forEach(b => b.addEventListener("click", subscribe));
 }
 
 function stat(label: string, value: string, tone: string): string {
@@ -1283,51 +1263,6 @@ function bindPartyModal(): void {
 function backupRestoreModal(): string {
   return `<div class="modal-backdrop" id="backup-restore-modal"><section class="modal"><button class="modal-close" id="backup-restore-close">×</button><span class="eyebrow">پشتیبان</span><h2>بازیابی اطلاعات</h2><p class="muted">فایل JSON پشتیبان سای‌سای را انتخاب کنید. داده‌های فعلی جایگزین می‌شوند.</p><input id="backup-file" type="file" accept=".json,application/json"><button class="primary-button wide" id="backup-restore-submit">بازیابی</button></section></div>`;
 }
-
-function paywall(subscription: Subscription): string {
-  const expiry = subscription.expiresAt ? `تا ${dateLabel(subscription.expiresAt)}` : "هنوز اشتراکی فعال نیست";
-  return `<section class="paywall"><div class="paywall-logo">س</div><span class="eyebrow">نسخه کامل سای‌سای</span><h2>مدیریت فروش، انبار و حساب‌ها در یکجا</h2><p class="muted">برای استفاده از نسخه کامل، اشتراک ماهانه را فعال کنید. تأیید خرید در سرور انجام می‌شود.</p>
-    <div class="paywall-features"><span>✓ فروش و خرید</span><span>✓ موجودی و کالا</span><span>✓ مشتری و تأمین‌کننده</span><span>✓ گزارش‌های مدیریتی</span></div>
-    <p class="subscription-expiry">${expiry}</p><button class="primary-button paywall-button" data-subscribe>خرید اشتراک ماهانه</button></section>`;
-}
-
-function showSubscription(subscription: Subscription): void {
-  const expiry = subscription.expiresAt ? dateLabel(subscription.expiresAt) : "نامشخص";
-  const statusLabel = subscription.status === "active"
-    ? "اشتراک پولی فعال است"
-    : subscription.status === "expired" ? "اشتراک فعالی وجود ندارد"
-    : subscription.status === "pending" ? "خرید در انتظار تأیید است" : "اشتراک فعالی وجود ندارد";
-  document.querySelector("#sub-modal")?.remove();
-  document.body.insertAdjacentHTML("beforeend", `<div class="modal-backdrop" id="sub-modal"><section class="modal"><button class="modal-close" id="sub-close">×</button><span class="eyebrow">اشتراک سای‌سای</span><h2>مدیریت اشتراک</h2><div class="price-card"><div><strong>پلن ماهانه</strong><span>${statusLabel}</span></div><b>${subscription.status === "active" ? "فعال" : "غیرفعال"}</b></div><p class="muted">اعتبار تا: ${expiry}</p><p class="muted">اشتراک ${money.format(subscription.durationDays || 30)}روزه · ${money.format(subscription.priceToman || 100000)} تومان</p><p class="muted">پرداخت امن درون‌برنامه‌ای کافه‌بازار؛ اشتراک فقط پس از تأیید سرور فعال می‌شود.</p><p class="auth-error" id="sub-error" hidden></p><button class="primary-button wide" id="sub-buy">خرید / تمدید اشتراک — ${money.format(subscription.priceToman || 100000)} تومان</button></section></div>`);
-  document.querySelector("#sub-close")?.addEventListener("click", () => document.querySelector("#sub-modal")?.remove());
-  document.querySelector("#sub-buy")?.addEventListener("click", subscribe);
-}
-
-function showSubscriptionError(message: string): void {
-  showSubscription({ status: "none", plan: "none", expiresAt: null });
-  const error = document.querySelector<HTMLElement>("#sub-error");
-  if (error) { error.hidden = false; error.textContent = message; }
-}
-
-async function subscribe(): Promise<void> {
-  const button = document.querySelector<HTMLButtonElement>("#sub-buy");
-  if (button) { button.disabled = true; button.textContent = "در حال اتصال به کافه‌بازار…"; }
-  try {
-    const subscription = await createMonthlyCheckout();
-    showSubscription(subscription);
-    showToast("خرید تأیید شد؛ اشتراک شما فعال است.");
-  }
-  catch (e) {
-    const message = e instanceof Error ? e.message : "پرداخت در دسترس نیست";
-    showToast(message);
-    const error = document.querySelector<HTMLElement>("#sub-error");
-    if (error) { error.hidden = false; error.textContent = message; }
-  } finally {
-    const button = document.querySelector<HTMLButtonElement>("#sub-buy");
-    if (button) { button.disabled = false; button.textContent = `خرید / تمدید اشتراک — ${money.format(100000)} تومان`; }
-  }
-}
-
 
 function jalaliCalendarParts(date: Date): { year: number; month: number; day: number } {
   const parts = new Intl.DateTimeFormat("en-US-u-ca-persian", { year: "numeric", month: "numeric", day: "numeric" }).formatToParts(date);
