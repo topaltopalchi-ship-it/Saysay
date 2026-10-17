@@ -32,7 +32,7 @@ function makeRecoveryCode(): string {
   return Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
 }
 
-export function authScreen(onSuccess: () => void): void {
+export function authScreen(onSuccess: () => void, initialMode: "login" | "signup" = "login"): void {
   if (!supabase || !SUPABASE_URL || !SUPABASE_KEY) {
     document.querySelector("#auth-lock")?.remove();
     const missing = document.createElement("div");
@@ -102,7 +102,7 @@ export function authScreen(onSuccess: () => void): void {
     wrapper.querySelector("#auth-description")!.textContent = mode === "login"
       ? "نام کاربری و رمز عبور خود را وارد کنید."
       : mode === "signup"
-        ? "حساب بسازید و ۳۰ روز رایگان از سای‌سای استفاده کنید."
+        ? "حساب بسازید و برای فعال‌سازی امکانات کامل، اشتراک تهیه کنید."
         : "نام کاربری، کد بازیابی و رمز جدید را وارد کنید.";
     passwordInput.autocomplete = mode === "login" ? "current-password" : "new-password";
     submit.textContent = mode === "login" ? "ورود به حساب" : mode === "signup" ? "ساخت حساب" : "تغییر رمز";
@@ -196,7 +196,7 @@ export function authScreen(onSuccess: () => void): void {
     }
   });
 
-  setMode("login");
+  setMode(initialMode);
   usernameInput.focus();
 }
 
