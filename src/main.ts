@@ -1776,7 +1776,7 @@ return receiptCommand ? ("دریافت " + rial(commandAmount) + " از " + comm
   document.querySelectorAll<HTMLElement>("[data-sale-edit]").forEach(b => b.addEventListener("click", async () => { const t=(await listTransactions()).find(x=>x.id===b.dataset.saleEdit); if(t) await openSaleModal(t); }));
   document.querySelectorAll<HTMLElement>("[data-sale-delete]").forEach(b => b.addEventListener("click", async () => { const id=b.dataset.saleDelete||""; if(!id||!confirm("این فاکتور فروش حذف شود؟")) return; try { const linkedOrders=(await listOrders()).filter(o=>o.saleTransactionId===id); await deleteTransaction(id); for (const order of linkedOrders) await scheduleOrderReminder({ ...order, status:"pending", saleTransactionId:undefined }); showToast(linkedOrders.length ? "فاکتور حذف شد و سفارش به حالت در انتظار برگشت" : "فاکتور حذف شد"); await render(); } catch(e){ showToast(e instanceof Error?e.message:"حذف فاکتور ناموفق بود"); } }));
   document.querySelectorAll<HTMLElement>("[data-purchase-edit]").forEach(b => b.addEventListener("click", async () => { const t=(await listTransactions()).find(x=>x.id===b.dataset.purchaseEdit); if(!t) return; products=await listProducts(); parties=await listParties(); openPurchaseModal(products, parties, rial, async m=>{showToast(m);await render();}, t); }));
-  document.querySelectorAll<HTMLElement>("[data-purchase-delete]").forEach(b => b.addEventListener("click", async () => { const id=b.dataset.purchaseDelete||""; if(!id||!confirm("این فاکتور خرید حذف شود؟")) return; try { await deleteTransaction(id); showToast("فاکتور خرید حذف شد"); await render(); } catch(e){ showToast(e instanceof Error?e.message:"حذف فاکتور خرید ناموفق بود"); } }));
+  document.querySelectorAll<HTMLElement>("[data-purchase-delete]").forEach(b => b.addEventListener("click", async () => { const id=b.dataset.purchaseDelete||""; if(!id||!confirm("این فاکتور خرید حذف شود؟")) return; try { await withGuestFeature("purchases", () => deleteTransaction(id)); showToast("فاکتور خرید حذف شد"); await render(); } catch(e){ showToast(e instanceof Error?e.message:"حذف فاکتور خرید ناموفق بود"); } }));
   document.querySelectorAll<HTMLElement>("[data-supply-product]").forEach(b => b.addEventListener("click", async () => {
     const productId = b.dataset.supplyProduct;
     products = await listProducts(); parties = await listParties();
@@ -1906,7 +1906,7 @@ return receiptCommand ? ("دریافت " + rial(commandAmount) + " از " + comm
     }
   });
   document.querySelectorAll<HTMLElement>("[data-settlement-edit]").forEach(b => b.addEventListener("click", async () => { const t=(await listTransactions()).find(x=>x.id===b.dataset.settlementEdit); if(t && (t.type==="receipt"||t.type==="payment")) await openSettlement(t.type,t); }));
-  document.querySelectorAll<HTMLElement>("[data-settlement-delete]").forEach(b => b.addEventListener("click", async () => { const id=b.dataset.settlementDelete||""; if(!id||!confirm("این دریافت/پرداخت حذف شود؟")) return; try { await deleteTransaction(id); showToast("ثبت حذف شد"); await render(); } catch(e){ showToast(e instanceof Error?e.message:"حذف ناموفق بود"); } }));
+  document.querySelectorAll<HTMLElement>("[data-settlement-delete]").forEach(b => b.addEventListener("click", async () => { const id=b.dataset.settlementDelete||""; if(!id||!confirm("این دریافت/پرداخت حذف شود؟")) return; try { await withGuestFeature("cash", () => deleteTransaction(id)); showToast("ثبت حذف شد"); await render(); } catch(e){ showToast(e instanceof Error?e.message:"حذف ناموفق بود"); } }));
   document.querySelectorAll<HTMLElement>("[data-expense-edit]").forEach(b => b.addEventListener("click", async () => {
     const e=(await listExpenses()).find(x=>x.id===b.dataset.expenseEdit); if(!e) return;
     (window as typeof window & { __saiAccounts?: unknown[] }).__saiAccounts=await listAccounts();
@@ -1915,7 +1915,7 @@ return receiptCommand ? ("دریافت " + rial(commandAmount) + " از " + comm
   }));
   document.querySelectorAll<HTMLElement>("[data-expense-delete]").forEach(b => b.addEventListener("click", async () => {
     const id=b.dataset.expenseDelete||""; if(!id||!confirm("این هزینه حذف شود؟")) return;
-    try { await deleteExpense(id); showToast("هزینه حذف شد"); await render(); } catch(e){ showToast(e instanceof Error?e.message:"حذف هزینه ناموفق بود"); }
+    try { await withGuestFeature("expenses", () => deleteExpense(id)); showToast("هزینه حذف شد"); await render(); } catch(e){ showToast(e instanceof Error?e.message:"حذف هزینه ناموفق بود"); }
   }));
   document.querySelector("#more-backup")?.addEventListener("click", async () => {
     const [products, parties, transactions, expenses, accounts, accountEntries, checks, movements, orders] = await Promise.all([listProducts(), listParties(), listTransactions(), listExpenses(), listAccounts(), (await import("./db")).listAccountEntries(), (await import("./db")).listChecks(), listMovements(), listOrders()]);
