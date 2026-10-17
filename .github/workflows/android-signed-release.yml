@@ -54,10 +54,10 @@ jobs:
           permission = "com.farsitel.bazaar.permission.PAY_THROUGH_BAZAAR"
           # Tell Android's manifest merger to remove this permission even if a dependency adds it.
           if 'xmlns:tools=' not in s:
-              s = re.sub(r'(<manifest\\b)', r'\\1 xmlns:tools="http://schemas.android.com/tools"', s, count=1)
+              s = re.sub(r'(<manifest\b)', r'\1 xmlns:tools="http://schemas.android.com/tools"', s, count=1)
           marker = f'<uses-permission android:name="{permission}" tools:node="remove" />'
           if permission not in s:
-              s = s.replace("</manifest>", f"    {marker}\\n</manifest>")
+              s = s.replace("</manifest>", f"    {marker}\n</manifest>")
           else:
               s = re.sub(r'<uses-permission[^>]*android:name="' + re.escape(permission) + r'"[^>]*/>', marker, s)
           p.write_text(s)
