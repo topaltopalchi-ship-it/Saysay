@@ -44,23 +44,44 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
-      - name: Increment Android version for CafeBazaar
+      - name: Remove CafeBazaar-only payment permission for Myket
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path("android/app/src/main/AndroidManifest.xml")
+          s = p.read_text()
+          permission = "com.farsitel.bazaar.permission.PAY_THROUGH_BAZAAR"
+          # Tell Android's manifest merger to remove this permission even if a dependency adds it.
+          if 'xmlns:tools=' not in s:
+              s = re.sub(r'(<manifest\\b)', r'\\1 xmlns:tools="http://schemas.android.com/tools"', s, count=1)
+          marker = f'<uses-permission android:name="{permission}" tools:node="remove" />'
+          if permission not in s:
+              s = s.replace("</manifest>", f"    {marker}\\n</manifest>")
+          else:
+              s = re.sub(r'<uses-permission[^>]*android:name="' + re.escape(permission) + r'"[^>]*/>', marker, s)
+          p.write_text(s)
+          print("Added manifest-merger removal rule for " + permission)
+          PY
+
+      - name: Increment Android version for Myket
+
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
           p = Path("android/app/build.gradle")
           s = p.read_text()
-          s, n = re.subn(r'versionCode\s+\d+', 'versionCode 5', s, count=1)
+          s, n = re.subn(r'versionCode\s+\d+', 'versionCode 6', s, count=1)
           if n != 1:
               raise SystemExit("Could not find Android versionCode in generated build.gradle")
-          s, n = re.subn(r'versionName\s+"[^"]+"', 'versionName "0.1.7"', s, count=1)
+          s, n = re.subn(r'versionName\s+"[^"]+"', 'versionName "0.1.8"', s, count=1)
           if n != 1:
-              s, n = re.subn(r"versionName\s+'[^']+'", "versionName '0.1.7'", s, count=1)
+              s, n = re.subn(r"versionName\s+'[^']+'", "versionName '0.1.8'", s, count=1)
           if n != 1:
               raise SystemExit("Could not find Android versionName in generated build.gradle")
           p.write_text(s)
-          print("Android version set to versionCode 5 / versionName 0.1.7")
+          print("Android version set to versionCode 6 / versionName 0.1.8")
           PY
 
       - name: Ensure JitPack repository for CafeBazaar Poolakey
