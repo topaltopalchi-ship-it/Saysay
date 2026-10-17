@@ -920,9 +920,9 @@ function bindOrderModal(existing?: Order): void {
       let saved: Order;
       if (existing) {
         saved = { ...existing, partyId, customerName: resolvedCustomerName, productId, orderType, quantity, unitPrice, deliveryDate, deliveryTime, note: modal.querySelector<HTMLInputElement>("#order-note")!.value.trim() };
-        await dbUpdateOrder(saved);
+        await withGuestFeature("orders", () => dbUpdateOrder(saved));
       } else {
-        saved = await dbAddOrder({ partyId, customerName: resolvedCustomerName, productId, orderType, quantity, unitPrice, orderDate: Date.now(), deliveryDate, deliveryTime, note: modal.querySelector<HTMLInputElement>("#order-note")!.value.trim(), status: "pending" });
+        saved = await withGuestFeature("orders", () => dbAddOrder({ partyId, customerName: resolvedCustomerName, productId, orderType, quantity, unitPrice, orderDate: Date.now(), deliveryDate, deliveryTime, note: modal.querySelector<HTMLInputElement>("#order-note")!.value.trim(), status: "pending" }));
       }
       if (existing) await cancelOrderReminder(saved.id);
       await scheduleOrderReminder(saved);
