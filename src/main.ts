@@ -1553,9 +1553,11 @@ async function bindActions(): Promise<void> {
         document.body.insertAdjacentHTML("beforeend", expenseModal());
         bindExpenseModal();
       } else if (action === "daily-brief") {
-        const [ps, pts, es, prods] = await Promise.all([listParties(), listTransactions(), listExpenses(), listProducts()]);
-        const msg = dailyBrief(await buildBusinessInsights(prods, ps, pts, es)); showToast(msg);
-        if ("speechSynthesis" in window) { const u = new SpeechSynthesisUtterance(msg); u.lang = "fa-IR"; u.rate = 0.9; window.speechSynthesis.cancel(); window.speechSynthesis.speak(u); }
+        await withGuestFeature("reports", async () => {
+          const [ps, pts, es, prods] = await Promise.all([listParties(), listTransactions(), listExpenses(), listProducts()]);
+          const msg = dailyBrief(await buildBusinessInsights(prods, ps, pts, es)); showToast(msg);
+          if ("speechSynthesis" in window) { const u = new SpeechSynthesisUtterance(msg); u.lang = "fa-IR"; u.rate = 0.9; window.speechSynthesis.cancel(); window.speechSynthesis.speak(u); }
+        });
       }
     } catch (e) {
       showToast(e instanceof Error ? e.message : "باز کردن این بخش ناموفق بود");
