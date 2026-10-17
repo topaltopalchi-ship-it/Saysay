@@ -1681,7 +1681,7 @@ async function render(): Promise<void> {
     if (!matched && draft.productHint) showToast(`کالای «${draft.productHint}» پیدا نشد؛ کالا را انتخاب کنید`);
   }, showToast);
 
-  bindVoiceQuestionAssistant(async (question: string) => {
+  bindVoiceQuestionAssistant(async (question: string) => withGuestFeature("assistant", async () => {
     const parseVoiceMoney = (text: string): number => {
     const normalized = text.replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/[٬,،]/g, " ").replace(/\s+/g, " ").trim();
     const units: Record<string, number> = { هزار: 1_000, هزارتا: 1_000, میلیون: 1_000_000, میلیونی: 1_000_000, میلیارد: 1_000_000_000, میلیاردی: 1_000_000_000 };
@@ -1769,7 +1769,7 @@ return receiptCommand ? ("دریافت " + rial(commandAmount) + " از " + comm
     if (/مطالبات|بدهکار|طلب/.test(q)) return `مجموع مطالبات فعلی ${rial(dashboard.receivables)} است.`;
     if (/موجودی|انبار|کمبود|رو به اتمام/.test(q)) return `${dashboard.lowStock.toLocaleString("fa-IR")} کالا به حد هشدار موجودی رسیده است.`;
     return "می‌توانم درباره فروش، دریافت، مطالبات، مشتری‌ها و موجودی کالا به شما جواب بدهم.";
-  }, showToast);
+  }), showToast);
 
   bindReportControls();
 
