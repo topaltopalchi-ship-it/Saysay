@@ -978,14 +978,14 @@ function bindOrderActions(): void {
       try {
         const total = Math.round(order.quantity * order.unitPrice);
         if (total <= 0) throw new Error("مبلغ سفارش معتبر نیست");
-        const sale = await addSale({
+        const sale = await withGuestFeature("sales", () => addSale({
           date: Date.now(),
           partyId: order.partyId,
           customerName: order.customerName,
           description: "فروش بابت سفارش " + order.id.slice(0, 8),
           lines: [{ productId: order.productId, quantity: order.quantity, unitPrice: order.unitPrice, discount: 0 }],
           paid: 0,
-        });
+        }));
         await dbUpdateOrder({ ...order, status: "completed", saleTransactionId: sale.id });
         await cancelOrderReminder(order.id);
         showToast("سفارش تحویل شد؛ فاکتور فروش ثبت شد");
