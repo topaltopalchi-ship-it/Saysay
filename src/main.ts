@@ -37,17 +37,15 @@ const navItems: Array<[Tab, string, string]> = [
 const money = new Intl.NumberFormat("fa-IR");
 
 async function openAccountThenSubscription(initialMode: "login" | "signup"): Promise<void> {
-  const openSubscription = async () => {
-    localStorage.setItem("sai-sai-unlocked", "1");
-    await render();
-    try { showSubscription(await getSubscription()); }
-    catch (e) { showSubscriptionError(e instanceof Error ? e.message : "وضعیت اشتراک دریافت نشد."); }
-  };
   if (!localStorage.getItem("sai-sai-account-username")) {
-    authScreen(() => { void openSubscription(); }, initialMode);
+    authScreen(() => {
+      localStorage.setItem("sai-sai-unlocked", "1");
+      void render();
+    }, initialMode);
     return;
   }
-  await openSubscription();
+  localStorage.setItem("sai-sai-unlocked", "1");
+  await render();
 }
 window.addEventListener("sai-sai-quota-account", () => { void openAccountThenSubscription("signup"); });
 
