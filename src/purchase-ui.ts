@@ -101,7 +101,7 @@ export function openPurchaseModal(products: Product[], parties: Party[], rial: M
           description: "خرید " + p.name,
           lines: [{ productId: p.id, quantity, unitPrice, discount: disc }],
           paid: paidValue
-        });
+        }));
       }
 
       modal.remove();
