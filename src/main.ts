@@ -1690,7 +1690,7 @@ async function render(): Promise<void> {
     if (!matched && draft.productHint) showToast(`کالای «${draft.productHint}» پیدا نشد؛ کالا را انتخاب کنید`);
   }, showToast);
 
-  bindVoiceQuestionAssistant(async (question: string) => withGuestFeature("assistant", async () => {
+  bindVoiceQuestionAssistant(async (question: string) => withGuestFeature("voiceQuery", async () => {
     const parseVoiceMoney = (text: string): number => {
     const normalized = text.replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d))).replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).replace(/[٬,،]/g, " ").replace(/\s+/g, " ").trim();
     const units: Record<string, number> = { هزار: 1_000, هزارتا: 1_000, میلیون: 1_000_000, میلیونی: 1_000_000, میلیارد: 1_000_000_000, میلیاردی: 1_000_000_000 };
