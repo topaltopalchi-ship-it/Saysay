@@ -23,7 +23,6 @@ export async function signOut(): Promise<void> {
 type AuthResponse = {
   session?: Session;
   error?: string;
-  trialEndsAt?: string;
   user?: { id: string; username: string };
 };
 
