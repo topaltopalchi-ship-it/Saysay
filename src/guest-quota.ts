@@ -1,4 +1,4 @@
-export type GuestFeature = "sales" | "purchases" | "inventory" | "people" | "checks" | "cash" | "orders" | "expenses" | "assistant";
+export type GuestFeature = "sales" | "purchases" | "inventory" | "people" | "checks" | "cash" | "orders" | "expenses" | "assistant" | "reports";
 
 const LIMIT = 10;
 const PREFIX = "sai-sai-guest-quota-v1:";
@@ -12,6 +12,7 @@ const LABELS: Record<GuestFeature, string> = {
   orders: "مدیریت سفارش‌ها",
   expenses: "ثبت هزینه",
   assistant: "پرسش‌وپاسخ منشی هوشمند",
+  reports: "گزارش زنده و گزارش امروز",
 };
 
 function isGuestMode(): boolean {
