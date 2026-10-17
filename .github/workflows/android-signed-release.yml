@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - feature/guest-10-free-uses
     tags:
       - "v*"
 
