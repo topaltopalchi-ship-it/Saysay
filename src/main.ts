@@ -2,7 +2,7 @@ import "./style.css";
 import "./ui-entrypoints";
 import { scanBarcode } from "./barcode-scanner";
 import { authScreen, signOut, welcomeScreen } from "./auth";
-import { withGuestFeature } from "./guest-quota";
+import { assertGuestFeatureAvailable, withGuestFeature } from "./guest-quota";
 import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 import { Filesystem, Directory } from "@capacitor/filesystem";
@@ -985,6 +985,9 @@ function bindOrderActions(): void {
       try {
         const total = Math.round(order.quantity * order.unitPrice);
         if (total <= 0) throw new Error("مبلغ سفارش معتبر نیست");
+        // Check both allowances before creating the sale so an exhausted order quota cannot leave a partial conversion.
+        assertGuestFeatureAvailable("sales");
+        assertGuestFeatureAvailable("orders");
         const sale = await withGuestFeature("sales", () => addSale({
           date: Date.now(),
           partyId: order.partyId,
