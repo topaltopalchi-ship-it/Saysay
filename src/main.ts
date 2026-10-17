@@ -986,7 +986,7 @@ function bindOrderActions(): void {
           lines: [{ productId: order.productId, quantity: order.quantity, unitPrice: order.unitPrice, discount: 0 }],
           paid: 0,
         }));
-        await dbUpdateOrder({ ...order, status: "completed", saleTransactionId: sale.id });
+        await withGuestFeature("orders", () => dbUpdateOrder({ ...order, status: "completed", saleTransactionId: sale.id }));
         await cancelOrderReminder(order.id);
         showToast("سفارش تحویل شد؛ فاکتور فروش ثبت شد");
       } catch (e) {
