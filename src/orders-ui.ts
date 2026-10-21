@@ -3,7 +3,7 @@ import { LocalNotifications } from "@capacitor/local-notifications";
 import type { Order, Party, Product } from "./domain";
 import { addOrder, deleteOrder, listOrders, updateOrder } from "./db";
 
-const REMINDER_CHANNEL = "saisai-orders";
+const REMINDER_CHANNEL = "saisai-orders-v2";
 
 function localDateInputValue(timestamp: number): string {
   const d = new Date(timestamp);
@@ -35,8 +35,9 @@ async function ensureNotificationPermission(): Promise<boolean> {
       id: REMINDER_CHANNEL,
       name: "یادآوری سفارشات",
       description: "یادآوری سفارش‌های در انتظار تحویل",
-      importance: 4,
+      importance: 5,
       vibration: true,
+      sound: "default",
     });
   } catch {}
   const current = await LocalNotifications.checkPermissions();
