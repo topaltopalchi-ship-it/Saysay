@@ -43,6 +43,28 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: Ensure Android camera permission for barcode scanning
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          manifest = Path("android/app/src/main/AndroidManifest.xml")
+          if not manifest.exists():
+              raise SystemExit("AndroidManifest.xml not found after Capacitor sync")
+          source = manifest.read_text()
+          permission = '<uses-permission android:name="android.permission.CAMERA" />'
+          if "android.permission.CAMERA" not in source:
+              source = re.sub(r"(<manifest\\b[^>]*>)", r"\\1\\n    " + permission, source, count=1)
+          feature = '<uses-feature android:name="android.hardware.camera" android:required="false" />'
+          if "android.hardware.camera" not in source:
+              source = re.sub(r"(<manifest\\b[^>]*>)", r"\\1\\n    " + feature, source, count=1)
+          if "android.permission.CAMERA" not in source or "<manifest" not in source:
+              raise SystemExit("Could not add camera permission to Android manifest")
+          manifest.write_text(source)
+          print("Camera permission is present in AndroidManifest.xml")
+          PY
+
       - name: Install native Vosk speech recognition
         run: python3 scripts/setup-vosk-android.py
 
@@ -65,12 +87,12 @@ jobs:
                       brace = source.find("{", repos)
                       if repos < 0 or brace < 0:
                           raise SystemExit("Could not find dependency repositories in settings")
-                      source = source[:brace + 1] + "\n        " + jitpack + source[brace + 1:]
+                      source = source[:brace + 1] + "\\n        " + jitpack + source[brace + 1:]
                       settings.write_text(source)
                   else:
                       root = Path("android/build.gradle")
                       root_source = root.read_text()
-                      root_source += "\n\nallprojects { repositories { " + jitpack + " } }\n"
+                      root_source += "\\n\\nallprojects { repositories { " + jitpack + " } }\\n"
                       root.write_text(root_source)
           print("JitPack repository configured for the generated Android project.")
           PY
@@ -122,11 +144,11 @@ jobs:
               }
           '''
           if "signingConfigs {" not in s:
-              s, n = re.subn(r"(^\s*buildTypes\s*\{)", lambda m: signing + "\n" + m.group(1), s, count=1, flags=re.M)
+              s, n = re.subn(r"(^\\s*buildTypes\\s*\\{)", lambda m: signing + "\\n" + m.group(1), s, count=1, flags=re.M)
               if n != 1:
                   raise SystemExit("Could not insert signingConfigs before buildTypes")
-          if not re.search(r"buildTypes\s*\{\s*release\s*\{[^}]*signingConfig\s+signingConfigs\.release", s, flags=re.S):
-              s, n = re.subn(r"(buildTypes\s*\{\s*release\s*\{)", r"\1\n            signingConfig signingConfigs.release", s, count=1)
+          if not re.search(r"buildTypes\\s*\\{\\s*release\\s*\\{[^}]*signingConfig\\s+signingConfigs\\.release", s, flags=re.S):
+              s, n = re.subn(r"(buildTypes\\s*\\{\\s*release\\s*\\{)", r"\\1\\n            signingConfig signingConfigs.release", s, count=1)
               if n != 1:
                   raise SystemExit("Could not configure release build type for signing")
           p.write_text(s)
@@ -158,9 +180,9 @@ jobs:
               raise SystemExit('package.json version is missing')
           version_code = 100000 + int(os.environ['RUN_NUMBER'])
           import re
-          s = re.sub(r'(?m)^\s*versionCode\s*(?:=\s*)?\d+\s*$', '', s)
-          s = re.sub(r'(?m)^\s*versionName\s*(?:=\s*)?["\'][^"\']+["\']\s*$', '', s)
-          insertion = '\n        versionCode ' + str(version_code) + '\n        versionName "' + version_name + '"\n'
+          s = re.sub(r'(?m)^\\s*versionCode\\s*(?:=\\s*)?\\d+\\s*$', '', s)
+          s = re.sub(r'(?m)^\\s*versionName\\s*(?:=\\s*)?["\\'][^"\\']+["\\']\\s*$', '', s)
+          insertion = '\\n        versionCode ' + str(version_code) + '\\n        versionName "' + version_name + '"\\n'
           s = s[:brace + 1] + insertion + s[brace + 1:]
           p.write_text(s)
           print('Bazaar versionName=' + version_name + ', versionCode=' + str(version_code))
@@ -196,14 +218,14 @@ jobs:
           set -euo pipefail
           AAB=$(find android/app/build/outputs/bundle/release -maxdepth 1 -name '*.aab' -print -quit)
           test -n "$AAB"
-          java -jar /tmp/bundlesigner.jar genbin \
-            --v2-signing-enabled true \
-            --v3-signing-enabled false \
-            --bundle "$AAB" \
-            --bin android/app/build/outputs/bundle/release/ \
-            --ks android/app/sai-sai-upload.jks \
-            --ks-pass "pass:$KEYSTORE_PASSWORD" \
-            --ks-key-alias "$KEY_ALIAS" \
+          java -jar /tmp/bundlesigner.jar genbin \\
+            --v2-signing-enabled true \\
+            --v3-signing-enabled false \\
+            --bundle "$AAB" \\
+            --bin android/app/build/outputs/bundle/release/ \\
+            --ks android/app/sai-sai-upload.jks \\
+            --ks-pass "pass:$KEYSTORE_PASSWORD" \\
+            --ks-key-alias "$KEY_ALIAS" \\
             --key-pass "pass:$KEY_PASSWORD"
           find android/app/build/outputs/bundle/release -maxdepth 1 -type f -name '*.bin' -print -quit | grep -q .
 
