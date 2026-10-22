@@ -1029,3 +1029,42 @@ a{color:#0284C7}
 #saisai-model-bar{height:100%;width:0;background:#0ea5e9;border-radius:999px;transition:width .2s ease}
 #saisai-model-download[data-status="error"]{border-color:#dc2626}
 #saisai-model-download[data-status="ready"]{border-color:#16a34a}
+
+
+/* نارنجی گرم؛ محدود به محتوای صفحهٔ اصلی داشبورد */
+.dashboard-orange-theme {
+  --accent: #f97316;
+  --success: #16a34a;
+  --surface: #fffaf5;
+  --surface-2: #fff0e2;
+}
+.dashboard-orange-theme .hero {
+  border-color: #fdba74;
+  background: linear-gradient(135deg, #fffaf5, #ffedd5);
+}
+.dashboard-orange-theme .hero-kicker,
+.dashboard-orange-theme .stat-card.primary strong,
+.dashboard-orange-theme .stat-card.success strong { color: #ea580c; }
+.dashboard-orange-theme .hero-mark,
+.dashboard-orange-theme .quick-card b,
+.dashboard-orange-theme .primary-button {
+  background: linear-gradient(145deg, #fb923c, #ea580c);
+  color: #fff;
+}
+.dashboard-orange-theme .subscription-card {
+  border-color: #fdba74;
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+}
+.dashboard-orange-theme .stat-card,
+.dashboard-orange-theme .panel,
+.dashboard-orange-theme .quick-card {
+  border-color: #fed7aa;
+}
+.dashboard-orange-theme .stat-card.primary,
+.dashboard-orange-theme .stat-card.success { background: #fff7ed; }
+.dashboard-orange-theme .quick-card:active { background: #ffedd5; }
+.dashboard-orange-theme .transaction-icon {
+  background: #ffedd5;
+  color: #ea580c;
+}
+.dashboard-orange-theme .empty-inline span { color: #ea580c; }
