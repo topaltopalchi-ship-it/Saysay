@@ -213,7 +213,6 @@ public class VoskSpeechRecognitionPlugin extends Plugin implements RecognitionLi
             deleteRecursively(tempDir); zipFile.delete();
         }
         model = new Model(modelDir.getAbsolutePath());
-        reportModelProgress("ready", 1, 1, null);
     }
 
     private void beginRecognition(PluginCall call) {
