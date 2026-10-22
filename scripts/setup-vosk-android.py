@@ -31,6 +31,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 import org.vosk.Model;
+import org.vosk.Recognizer;
 import org.vosk.android.SpeechService;
 import org.vosk.android.RecognitionListener;
 import org.json.JSONObject;
@@ -164,7 +165,7 @@ public class VoskSpeechRecognitionPlugin extends Plugin implements RecognitionLi
     private void beginRecognition(PluginCall call) {
         if (stopping || activeCall != call) return;
         try {
-            speechService = new SpeechService(model, 16000.0f);
+            speechService = new SpeechService(new Recognizer(model, 16000.0f), 16000.0f);
             listening = true;
             speechService.startListening(this);
             main.postDelayed(() -> {
