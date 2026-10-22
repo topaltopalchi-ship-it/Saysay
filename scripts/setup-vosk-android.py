@@ -312,7 +312,7 @@ manifest = root / "app/src/main/AndroidManifest.xml"
 ms = manifest.read_text()
 internet_permission = '<uses-permission android:name="android.permission.INTERNET" />'
 if internet_permission not in ms:
-    ms = re.sub(r"(<manifest\\b[^>]*>)", r"\\1\\n    " + internet_permission, ms, count=1)
+    ms = re.sub(r"(<manifest\b[^>]*>)", r"\1\n    " + internet_permission, ms, count=1)
     manifest.write_text(ms)
 
 permission = '<uses-permission android:name="android.permission.RECORD_AUDIO" />'
