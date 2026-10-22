@@ -152,8 +152,11 @@ jobs:
           brace = s.find('{', start)
           if brace < 0:
               raise SystemExit('Opening brace for defaultConfig not found')
+          package = __import__('json').loads(Path('package.json').read_text())
+          version_name = package.get('version')
+          if not version_name:
+              raise SystemExit('package.json version is missing')
           version_code = 100000 + int(os.environ['RUN_NUMBER'])
-          version_name = '0.1.' + os.environ['RUN_NUMBER']
           import re
           # Remove existing version declarations, then insert fresh values.
           s = re.sub(r'(?m)^\s*versionCode\s*(?:=\s*)?\d+\s*$', '', s)
@@ -184,11 +187,15 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      - name: Read app version
+        id: app_version
+        run: echo "version=$(node -p \"require('./package.json').version\")" >> "$GITHUB_OUTPUT"
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.${{ github.run_number }}
-          name: SaySai v0.1.${{ github.run_number }}
+          tag_name: bazaar-build-${{ github.run_number }}
+          name: SaySai v${{ steps.app_version.outputs.version }} (Bazaar build ${{ github.run_number }})
           generate_release_notes: true
           files: |
             android/app/build/outputs/bundle/release/*.aab
