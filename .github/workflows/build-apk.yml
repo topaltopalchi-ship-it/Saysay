@@ -26,6 +26,9 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      - name: Setup Android SDK tools
+        uses: android-actions/setup-android@v3
+
       - name: Install dependencies
         run: npm install
 
@@ -210,7 +213,9 @@ jobs:
           jarsigner -verify -verbose -certs android/app/build/outputs/bundle/release/*.aab
           APK=$(find android/app/build/outputs/apk/release -maxdepth 1 -name '*.apk' -print -quit)
           test -n "$APK"
-          apksigner verify --verbose "$APK"
+          APKSIGNER=$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -type f -name apksigner 2>/dev/null | sort -V | tail -n 1)
+          test -n "$APKSIGNER" || (echo "Android apksigner tool not found" && exit 1)
+          "$APKSIGNER" verify --verbose "$APK"
 
       - name: Download CafeBazaar bundle-signer
         run: |
