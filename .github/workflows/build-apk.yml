@@ -149,17 +149,17 @@ jobs:
           p = Path("android/app/build.gradle")
           s = p.read_text()
           version_code = 100000 + int(os.environ["RUN_NUMBER"])
-          version_name = f"0.1.{os.environ['RUN_NUMBER']}"
-          # Remove any existing declarations, then insert explicit values inside defaultConfig.
+          version_name = "0.1." + os.environ["RUN_NUMBER"]
           s = re.sub(r"(?m)^\\s*versionCode\\s*(?:=\\s*)?\\d+\\s*\\n", "", s)
           s = re.sub(r'(?m)^\\s*versionName\\s*(?:=\\s*)?"[^"]+"\\s*\\n', "", s)
           match = re.search(r"defaultConfig\\s*\\{", s)
           if not match:
               raise SystemExit("Could not find defaultConfig block in android/app/build.gradle")
           pos = match.end()
-          s = s[:pos] + f"\\n        versionCode {version_code}\\n        versionName \\"{version_name}\\"\\n" + s[pos:]
+          insertion = "\\n        versionCode " + str(version_code) + "\\n        versionName \"" + version_name + "\"\\n"
+          s = s[:pos] + insertion + s[pos:]
           p.write_text(s)
-          print(f"Bazaar versionName={version_name}, versionCode={version_code}")
+          print("Bazaar versionName=" + version_name + ", versionCode=" + str(version_code))
           PY
 
       - name: Build signed release AAB
