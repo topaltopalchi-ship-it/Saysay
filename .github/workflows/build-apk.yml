@@ -158,7 +158,6 @@ jobs:
               raise SystemExit('package.json version is missing')
           version_code = 100000 + int(os.environ['RUN_NUMBER'])
           import re
-          # Remove existing version declarations, then insert fresh values.
           s = re.sub(r'(?m)^\s*versionCode\s*(?:=\s*)?\d+\s*$', '', s)
           s = re.sub(r'(?m)^\s*versionName\s*(?:=\s*)?["\'][^"\']+["\']\s*$', '', s)
           insertion = '\n        versionCode ' + str(version_code) + '\n        versionName "' + version_name + '"\n'
@@ -179,11 +178,43 @@ jobs:
         run: |
           jarsigner -verify -verbose -certs android/app/build/outputs/bundle/release/*.aab
 
-      - name: Upload standalone signed AAB
+      - name: Download CafeBazaar bundle-signer
+        run: |
+          set -euo pipefail
+          RELEASE_JSON=$(curl --fail --silent --show-error https://api.github.com/repos/cafebazaar/bundle-signer/releases/latest)
+          ASSET_URL=$(printf '%s' "$RELEASE_JSON" | python3 -c 'import json,sys; d=json.load(sys.stdin); a=[x["browser_download_url"] for x in d["assets"] if x["name"].endswith(".jar") and "bundlesigner" in x["name"].lower()]; print(a[0] if a else "")')
+          test -n "$ASSET_URL" || (echo "Could not find bundle-signer JAR in latest official release" && exit 1)
+          curl --fail --location --silent --show-error "$ASSET_URL" --output /tmp/bundlesigner.jar
+          test -s /tmp/bundlesigner.jar
+          java -jar /tmp/bundlesigner.jar --help
+
+      - name: Generate CafeBazaar BIN
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          AAB=$(find android/app/build/outputs/bundle/release -maxdepth 1 -name '*.aab' -print -quit)
+          test -n "$AAB"
+          java -jar /tmp/bundlesigner.jar genbin \
+            --v2-signing-enabled true \
+            --v3-signing-enabled false \
+            --bundle "$AAB" \
+            --bin android/app/build/outputs/bundle/release/ \
+            --ks android/app/sai-sai-upload.jks \
+            --ks-pass "pass:$KEYSTORE_PASSWORD" \
+            --ks-key-alias "$KEY_ALIAS" \
+            --key-pass "pass:$KEY_PASSWORD"
+          find android/app/build/outputs/bundle/release -maxdepth 1 -type f -name '*.bin' -print -quit | grep -q .
+
+      - name: Upload signed AAB and CafeBazaar BIN
         uses: actions/upload-artifact@v4
         with:
-          name: SaySai-Bazaar-AAB
-          path: android/app/build/outputs/bundle/release/*.aab
+          name: SaySai-Bazaar-AAB-and-BIN
+          path: |
+            android/app/build/outputs/bundle/release/*.aab
+            android/app/build/outputs/bundle/release/*.bin
           if-no-files-found: error
           retention-days: 30
 
@@ -201,3 +232,4 @@ jobs:
           generate_release_notes: true
           files: |
             android/app/build/outputs/bundle/release/*.aab
+            android/app/build/outputs/bundle/release/*.bin
