@@ -50,34 +50,28 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import re
 
           jitpack = "maven { url 'https://jitpack.io' }"
           settings = Path("android/settings.gradle")
-          source = settings.read_text() if settings.exists() else ""
+          if not settings.exists():
+              settings = Path("android/settings.gradle.kts")
 
-          # Prefer centralized dependency repositories when this Gradle template has them.
-          if "dependencyResolutionManagement" in source:
-              start = source.index("dependencyResolutionManagement")
-          match = re.search(r"defaultConfig\s*\{", s)
-              if not match:
-                  raise SystemExit("dependencyResolutionManagement exists but has no repositories block")
-              pos = start + match.end()
+          if settings.exists():
+              source = settings.read_text()
               if jitpack not in source:
-                  source = source[:pos] + "\n        " + jitpack + source[pos:]
-                  settings.write_text(source)
-          else:
-              # Older Capacitor templates keep dependency repositories in the root build.gradle.
-              root = Path("android/build.gradle")
-              root_source = root.read_text() if root.exists() else ""
-              if jitpack not in root_source:
-          match = re.search(r"defaultConfig\s*\{", s)
-                  if match:
-                      root_source = root_source[:match.end()] + "\n        " + jitpack + root_source[match.end():]
+                  management = source.find("dependencyResolutionManagement")
+                  if management >= 0:
+                      repos = source.find("repositories", management)
+                      brace = source.find("{", repos)
+                      if repos < 0 or brace < 0:
+                          raise SystemExit("Could not find dependency repositories in settings")
+                      source = source[:brace + 1] + "\n        " + jitpack + source[brace + 1:]
+                      settings.write_text(source)
                   else:
-                      root_source += "\n\nallprojects {\n    repositories {\n        " + jitpack + "\n    }\n}\n"
-                  root.write_text(root_source)
-
+                      root = Path("android/build.gradle")
+                      root_source = root.read_text()
+                      root_source += "\n\nallprojects { repositories { " + jitpack + " } }\n"
+                      root.write_text(root_source)
           print("JitPack repository configured for the generated Android project.")
           PY
 
