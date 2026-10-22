@@ -197,17 +197,20 @@ jobs:
           print("Bazaar versionName=" + version_name + ", versionCode=" + str(version_code))
           PY
 
-      - name: Build signed release AAB
+      - name: Build signed release AAB and installable APK
         working-directory: android
         env:
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew bundleRelease --no-daemon
+        run: ./gradlew bundleRelease assembleRelease --no-daemon
 
-      - name: Verify AAB signature
+      - name: Verify release signatures
         run: |
           jarsigner -verify -verbose -certs android/app/build/outputs/bundle/release/*.aab
+          APK=$(find android/app/build/outputs/apk/release -maxdepth 1 -name '*.apk' -print -quit)
+          test -n "$APK"
+          apksigner verify --verbose "$APK"
 
       - name: Download CafeBazaar bundle-signer
         run: |
@@ -229,11 +232,13 @@ jobs:
           test -n "$AAB"
           java -jar /tmp/bundlesigner.jar genbin --v2-signing-enabled true --v3-signing-enabled false --bundle "$AAB" --bin android/app/build/outputs/bundle/release/ --ks android/app/sai-sai-upload.jks --ks-pass "pass:$KEYSTORE_PASSWORD" --ks-key-alias "$KEY_ALIAS" --key-pass "pass:$KEY_PASSWORD"
           find android/app/build/outputs/bundle/release -maxdepth 1 -type f -name '*.bin' -print -quit | grep -q .
-      - name: Upload signed AAB and CafeBazaar BIN
+      - name: Upload signed APK, AAB and CafeBazaar BIN
         uses: actions/upload-artifact@v4
         with:
-          name: SaySai-Bazaar-AAB-and-BIN
+          name: SaySai-APK-AAB-and-BIN
           path: |
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/apk/release/*.apk
             android/app/build/outputs/bundle/release/*.aab
             android/app/build/outputs/bundle/release/*.bin
           if-no-files-found: error
