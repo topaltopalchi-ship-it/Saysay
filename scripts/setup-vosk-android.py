@@ -123,17 +123,46 @@ public class VoskSpeechRecognitionPlugin extends Plugin implements RecognitionLi
             File zipFile = new File(getContext().getFilesDir(), MODEL_NAME + ".zip");
             File tempDir = new File(getContext().getFilesDir(), MODEL_NAME + ".extracting");
             deleteRecursively(tempDir);
-            HttpURLConnection connection = (HttpURLConnection) new URL(MODEL_URL).openConnection();
-            connection.setConnectTimeout(20000);
-            connection.setReadTimeout(60000);
-            connection.setInstanceFollowRedirects(true);
-            connection.connect();
-            if (connection.getResponseCode() != 200) throw new Exception("Model download HTTP " + connection.getResponseCode());
-            try (InputStream in = new BufferedInputStream(connection.getInputStream());
-                 FileOutputStream out = new FileOutputStream(zipFile)) {
-                byte[] buffer = new byte[32768]; int n;
-                while ((n = in.read(buffer)) >= 0) out.write(buffer, 0, n);
-            } finally { connection.disconnect(); }
+            Exception downloadFailure = null;
+            boolean downloaded = false;
+            for (int attempt = 1; attempt <= 3 && !downloaded; attempt++) {
+                HttpURLConnection connection = null;
+                try {
+                    zipFile.delete();
+                    connection = (HttpURLConnection) new URL(MODEL_URL).openConnection();
+                    connection.setConnectTimeout(45000);
+                    connection.setReadTimeout(120000);
+                    connection.setInstanceFollowRedirects(true);
+                    connection.setRequestProperty("User-Agent", "SaySai-Android");
+                    connection.setRequestProperty("Accept-Encoding", "identity");
+                    connection.connect();
+                    int response = connection.getResponseCode();
+                    if (response != 200) throw new Exception("Model download HTTP " + response);
+                    try (InputStream in = new BufferedInputStream(connection.getInputStream());
+                         FileOutputStream out = new FileOutputStream(zipFile)) {
+                        byte[] buffer = new byte[32768]; int n;
+                        while ((n = in.read(buffer)) >= 0) out.write(buffer, 0, n);
+                    }
+                    if (!zipFile.isFile() || zipFile.length() < 1000000L) {
+                        throw new Exception("Downloaded Persian model archive is too small");
+                    }
+                    downloaded = true;
+                } catch (Exception e) {
+                    downloadFailure = e;
+                    zipFile.delete();
+                    Log.w(TAG, "Persian model download attempt " + attempt + " failed", e);
+                    if (attempt < 3) {
+                        try { Thread.sleep(1800L * attempt); }
+                        catch (InterruptedException interrupted) {
+                            Thread.currentThread().interrupt();
+                            throw new Exception("Model download interrupted", interrupted);
+                        }
+                    }
+                } finally {
+                    if (connection != null) connection.disconnect();
+                }
+            }
+            if (!downloaded) throw new Exception("Persian model download failed after retries", downloadFailure);
             tempDir.mkdirs();
             try (ZipInputStream zin = new ZipInputStream(new BufferedInputStream(new java.io.FileInputStream(zipFile)))) {
                 ZipEntry entry;
