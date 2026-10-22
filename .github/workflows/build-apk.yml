@@ -146,20 +146,28 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import os, re
-          p = Path("android/app/build.gradle")
+          candidates = [Path("android/app/build.gradle"), Path("android/app/build.gradle.kts")]
+          p = next((x for x in candidates if x.exists()), None)
+          if p is None:
+              raise SystemExit("Could not find Android app Gradle file")
           s = p.read_text()
           version_code = 100000 + int(os.environ["RUN_NUMBER"])
           version_name = "0.1." + os.environ["RUN_NUMBER"]
-          s = re.sub(r"(?m)^\s*versionCode\s*(?:=\s*)?\d+\s*\n", "", s)
-          s = re.sub(r'(?m)^\s*versionName\s*(?:=\s*)?"[^"]+"\s*\n', "", s)
-          match = re.search(r"defaultConfig\s*\{", s)
+          # Match Gradle/Groovy or Kotlin DSL defaultConfig blocks, allowing indentation.
+          match = re.search(r"defaultConfig\\s*\\{", s)
           if not match:
-              raise SystemExit("Could not find defaultConfig block in android/app/build.gradle")
-          pos = match.end()
-          insertion = "\n        versionCode " + str(version_code) + "\n        versionName \"" + version_name + "\"\n"
-          s = s[:pos] + insertion + s[pos:]
+              print("Gradle file checked:", p)
+              print(s[:5000])
+              raise SystemExit("Could not find defaultConfig block in " + str(p))
+          start = match.end()
+          # Replace existing version declarations only within defaultConfig.
+          tail = s[start:]
+          tail = re.sub(r"(?m)^\\s*versionCode\\s*(?:=\\s*)?\\d+\\s*\\n", "", tail)
+          tail = re.sub(r'(?m)^\\s*versionName\\s*(?:=\\s*)?"[^"]+"\\s*\\n', "", tail)
+          insertion = "\\n        versionCode " + str(version_code) + "\\n        versionName \\"" + version_name + "\\"\\n"
+          s = s[:start] + insertion + tail
           p.write_text(s)
-          print("Bazaar versionName=" + version_name + ", versionCode=" + str(version_code))
+          print("Bazaar versionName=" + version_name + ", versionCode=" + str(version_code) + " in " + str(p))
           PY
 
       - name: Build signed release AAB
