@@ -91,7 +91,7 @@ jobs:
                       brace = source.find("{", repos)
                       if repos < 0 or brace < 0:
                           raise SystemExit("Could not find dependency repositories in settings")
-                      source = source[:brace + 1] + "\\n        " + jitpack + source[brace + 1:]
+                      source = source[:brace + 1] + "\n        " + jitpack + source[brace + 1:]
                       settings.write_text(source)
                   else:
                       root = Path("android/build.gradle")
@@ -184,7 +184,81 @@ jobs:
               raise SystemExit('package.json version is missing')
           version_code = 100000 + int(os.environ['RUN_NUMBER'])
           import re
-          s = re.sub(r'(?m)^\\s*versionCode\\s*(?:=\\s*)?\\d+\\s*$', '', s)
+          s = re.sub(r'(?m)^\s*versionCode\s*(?:=\s*)?\d+\s*
+          s = re.sub(r"""(?m)^\s*versionName\s*(?:=\s*)?["'][^"']+["']\s*$""", '', s)
+          insertion = '\n        versionCode ' + str(version_code) + '\n        versionName "' + version_name + '"\n'
+          s = s[:brace + 1] + insertion + s[brace + 1:]
+          p.write_text(s)
+          print('Bazaar versionName=' + version_name + ', versionCode=' + str(version_code))
+          PY
+
+      - name: Build signed release AAB
+        working-directory: android
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew bundleRelease --no-daemon
+
+      - name: Verify AAB signature
+        run: |
+          jarsigner -verify -verbose -certs android/app/build/outputs/bundle/release/*.aab
+
+      - name: Download CafeBazaar bundle-signer
+        run: |
+          set -euo pipefail
+          RELEASE_JSON=$(curl --fail --silent --show-error https://api.github.com/repos/cafebazaar/bundle-signer/releases/latest)
+          ASSET_URL=$(printf '%s' "$RELEASE_JSON" | python3 -c 'import json,sys; d=json.load(sys.stdin); a=[x["browser_download_url"] for x in d["assets"] if x["name"].endswith(".jar") and "signer" in x["name"].lower()]; print(a[0] if a else "")')
+          test -n "$ASSET_URL" || (echo "Could not find bundle-signer JAR in latest official release" && exit 1)
+          curl --fail --location --silent --show-error "$ASSET_URL" --output /tmp/bundlesigner.jar
+          test -s /tmp/bundlesigner.jar
+
+      - name: Generate CafeBazaar BIN
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          AAB=$(find android/app/build/outputs/bundle/release -maxdepth 1 -name '*.aab' -print -quit)
+          test -n "$AAB"
+          java -jar /tmp/bundlesigner.jar genbin \\
+            --v2-signing-enabled true \\
+            --v3-signing-enabled false \\
+            --bundle "$AAB" \\
+            --bin android/app/build/outputs/bundle/release/ \\
+            --ks android/app/sai-sai-upload.jks \\
+            --ks-pass "pass:$KEYSTORE_PASSWORD" \\
+            --ks-key-alias "$KEY_ALIAS" \\
+            --key-pass "pass:$KEY_PASSWORD"
+          find android/app/build/outputs/bundle/release -maxdepth 1 -type f -name '*.bin' -print -quit | grep -q .
+
+      - name: Upload signed AAB and CafeBazaar BIN
+        uses: actions/upload-artifact@v4
+        with:
+          name: SaySai-Bazaar-AAB-and-BIN
+          path: |
+            android/app/build/outputs/bundle/release/*.aab
+            android/app/build/outputs/bundle/release/*.bin
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Read app version
+        id: app_version
+        run: |
+          VERSION=$(node -p 'require("./package.json").version')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: bazaar-build-${{ github.run_number }}
+          name: SaySai v${{ steps.app_version.outputs.version }} (Bazaar build ${{ github.run_number }})
+          generate_release_notes: true
+          files: |
+            android/app/build/outputs/bundle/release/*.aab
+            android/app/build/outputs/bundle/release/*.bin
+, '', s)
           s = re.sub(r'(?m)^\\s*versionName\\s*(?:=\\s*)?["\\'][^"\\']+["\\']\\s*$', '', s)
           insertion = '\\n        versionCode ' + str(version_code) + '\\n        versionName "' + version_name + '"\\n'
           s = s[:brace + 1] + insertion + s[brace + 1:]
