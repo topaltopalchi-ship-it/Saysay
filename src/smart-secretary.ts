@@ -1,4 +1,4 @@
-import { SpeechRecognition } from "@capacitor-community/speech-recognition";
+import { SpeechRecognition } from "./vosk-speech";
 import { TextToSpeech } from "@capacitor-community/text-to-speech";
 import { Capacitor } from "@capacitor/core";
 import { getPartyBalances, getStock, listParties, listProducts, listTransactions } from "./db";
@@ -77,7 +77,7 @@ export function openSmartSecretary():void{
  <div id="secretary-messages" class="secretary-messages" aria-live="polite"></div>
  <form id="secretary-form" class="secretary-form"><input id="secretary-input" type="text" autocomplete="off" placeholder="مثلاً لیست بدهکاران…" aria-label="پیام"/><button class="primary-button" type="submit">ارسال</button></form>
  <button class="secondary-button wide" id="secretary-mic" type="button">🎙 صحبت کردن</button>
- <small class="muted">پاسخ‌ها از اطلاعات محلی سای‌سای محاسبه می‌شوند. تشخیص گفتار ممکن است به سرویس گفتار گوشی نیاز داشته باشد.</small></section></div>`);
+ <small class="muted">پاسخ‌ها از اطلاعات محلی سای‌سای محاسبه می‌شوند؛ تشخیص صدا با مدل آفلاین انجام می‌شود.</small></section></div>`);
  document.querySelector("#secretary-close")?.addEventListener("click",close);
  document.querySelector("#secretary-modal")?.addEventListener("click",e=>{if(e.target===e.currentTarget)close();});
  document.querySelector("#secretary-form")?.addEventListener("submit",e=>{e.preventDefault();const input=document.querySelector<HTMLInputElement>("#secretary-input");if(input){const v=input.value;input.value="";void send(v);}});
@@ -85,7 +85,7 @@ export function openSmartSecretary():void{
   const button=document.querySelector<HTMLButtonElement>("#secretary-mic");if(!button)return;
   try{
    const available=await SpeechRecognition.available().catch(()=>({available:false}));
-   if(!available.available){addMessage("assistant","سرویس تشخیص گفتار روی گوشی در دسترس نیست. در تنظیمات گوشی، برنامه Google و سرویس «Speech Recognition and Synthesis» را فعال یا به‌روز کنید؛ سپس گوشی را یک‌بار راه‌اندازی مجدد کنید.");return;}
+   if(!available.available){addMessage("assistant","تشخیص گفتار آفلاین در این نسخه در دسترس نیست.");return;}
    const permission=await SpeechRecognition.requestPermissions();
    if(permission.speechRecognition!=="granted"){addMessage("assistant","مجوز تشخیص گفتار داده نشد. از تنظیمات گوشی > برنامه‌ها > سای‌سای، مجوز میکروفون را فعال کنید.");return;}
    try{const state=await SpeechRecognition.isListening();if(state.listening)await SpeechRecognition.stop().catch(()=>undefined);}catch{}
@@ -97,10 +97,8 @@ export function openSmartSecretary():void{
    else addMessage("assistant","صدایی به متن تبدیل نشد. دوباره صحبت کنید یا سؤال را تایپ کنید.");
   }catch(error){listening=false;button.disabled=false;button.textContent="🎙 صحبت کردن";
    const detail=error instanceof Error?error.message:"";
-   addMessage("assistant",/permission|denied/i.test(detail)?"دسترسی میکروفون یا تشخیص گفتار رد شده است؛ مجوزهای سای‌سای را بررسی کنید.":"سرویس تشخیص گفتار فارسی شروع نشد. سرویس گفتار Google را فعال و به‌روز کنید؛ اگر باز هم کار نکرد، فعلاً سؤال را در کادر بنویسید.");
+   addMessage("assistant",/permission|denied/i.test(detail)?"دسترسی میکروفون یا تشخیص گفتار رد شده است؛ مجوزهای سای‌سای را بررسی کنید.":"سرویس تشخیص گفتار فارسی شروع نشد. اگر مدل هنوز دریافت نشده، اتصال اینترنت را بررسی کنید؛ در غیر این صورت فعلاً سؤال را تایپ کنید.");
   }
  });
- void SpeechRecognition.addListener("partialResults",e=>{const t=e.matches?.[0]?.trim();if(!t||!document.querySelector("#secretary-modal"))return;const input=document.querySelector<HTMLInputElement>("#secretary-input");if(input)input.value=t;});
- void SpeechRecognition.addListener("listeningState",e=>{if(e.status==="stopped"){listening=false;const b=document.querySelector<HTMLButtonElement>("#secretary-mic");if(b){b.disabled=false;b.textContent="🎙 صحبت کردن";}const input=document.querySelector<HTMLInputElement>("#secretary-input");if(input?.value.trim()){const v=input.value;input.value="";void send(v);}}});
  addMessage("assistant","سلام! منشی آفلاین سای‌سای آماده است. بپرسید «لیست بدهکاران»، «موجودی کالاها» یا «کالاهای کم‌موجودی».");
 }
