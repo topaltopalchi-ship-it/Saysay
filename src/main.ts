@@ -1306,7 +1306,7 @@ function showSubscription(subscription: Subscription): void {
   document.querySelector("#sub-modal")?.remove();
   document.body.insertAdjacentHTML("beforeend", `<div class="modal-backdrop" id="sub-modal"><section class="modal"><button class="modal-close" id="sub-close">×</button><span class="eyebrow">اشتراک سای‌سای</span><h2>مدیریت اشتراک</h2><div class="price-card"><div><strong>پلن ماهانه</strong><span>${statusLabel}</span></div><b>${subscription.status === "active" ? "فعال" : "غیرفعال"}</b></div><p class="muted">اعتبار تا: ${expiry}</p><p class="muted">اشتراک ${money.format(subscription.durationDays || 30)}روزه · ${money.format(subscription.priceToman || 100000)} تومان</p><p class="muted">پرداخت امن درون‌برنامه‌ای کافه‌بازار؛ اشتراک فقط پس از تأیید سرور فعال می‌شود.</p><p class="auth-error" id="sub-error" hidden></p><button class="primary-button wide" id="sub-buy">خرید / تمدید اشتراک — ${money.format(subscription.priceToman || 100000)} تومان</button></section></div>`);
   document.querySelector("#sub-close")?.addEventListener("click", () => document.querySelector("#sub-modal")?.remove());
-  document.querySelector("#sub-buy")?.addEventListener("click", subscribe);
+  // The purchase button is inserted dynamically; delegated handling is registered once below.
 }
 
 function showSubscriptionError(message: string): void {
@@ -1317,7 +1317,11 @@ function showSubscriptionError(message: string): void {
 
 async function subscribe(): Promise<void> {
   const button = document.querySelector<HTMLButtonElement>("#sub-buy");
+  if (button?.disabled) return;
   if (button) { button.disabled = true; button.textContent = "در حال اتصال به کافه‌بازار…"; }
+  const errorBox = document.querySelector<HTMLElement>("#sub-error");
+  if (errorBox) { errorBox.hidden = true; errorBox.textContent = ""; }
+  showToast("در حال اتصال به کافه‌بازار…");
   try {
     const subscription = await createMonthlyCheckout();
     showSubscription(subscription);
@@ -1334,6 +1338,13 @@ async function subscribe(): Promise<void> {
   }
 }
 
+// Delegate clicks because the subscription modal is dynamically recreated after status checks.
+document.addEventListener("click", (event: MouseEvent) => {
+  const target = event.target;
+  if (!(target instanceof Element) || !target.closest("#sub-buy")) return;
+  event.preventDefault();
+  void subscribe();
+});
 
 function jalaliCalendarParts(date: Date): { year: number; month: number; day: number } {
   const parts = new Intl.DateTimeFormat("en-US-u-ca-persian", { year: "numeric", month: "numeric", day: "numeric" }).formatToParts(date);
