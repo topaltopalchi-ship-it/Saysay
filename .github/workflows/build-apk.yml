@@ -96,7 +96,7 @@ jobs:
                   else:
                       root = Path("android/build.gradle")
                       root_source = root.read_text()
-                      root_source += "\\n\\nallprojects { repositories { " + jitpack + " } }\\n"
+                      root_source += "\n\nallprojects { repositories { " + jitpack + " } }\n"
                       root.write_text(root_source)
           print("JitPack repository configured for the generated Android project.")
           PY
