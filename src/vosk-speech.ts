@@ -3,6 +3,7 @@ import { Capacitor, registerPlugin } from "@capacitor/core";
 type VoskStartOptions = { prompt?: string; language?: string; maxResults?: number; partialResults?: boolean; popup?: boolean };
 type VoskResult = { text: string };
 type VoskPlugin = {
+  prepare(): Promise<void>;
   requestPermissions(): Promise<{ granted: boolean }>;
   isListening(): Promise<{ listening: boolean }>;
   start(options?: VoskStartOptions): Promise<VoskResult>;
@@ -11,6 +12,17 @@ type VoskPlugin = {
 
 /** Persian offline speech recognition. Intentionally has no Android speech-service fallback. */
 const NativeVosk = registerPlugin<VoskPlugin>("VoskSpeechRecognition");
+
+export async function prepareVoskModel(): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return;
+  try {
+    await NativeVosk.prepare();
+  } catch {
+    // The first voice action retries the download and shows a useful error if needed.
+  }
+}
+
+if (Capacitor.isNativePlatform()) void prepareVoskModel();
 
 export const SpeechRecognition = {
   async available(): Promise<{ available: boolean }> {
