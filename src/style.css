@@ -1070,10 +1070,24 @@ a{color:#0284C7}
 .dashboard-orange-theme .empty-inline span { color: #ea580c; }
 
 
-/* بنفش شدن حاشیه‌های دکمه‌های اصلی */
+/* تم بنفش هماهنگ: حاشیه بنفش، داخل دکمه بنفش تیره و متن سفید خوانا */
 .primary-button,
 .primary-button:hover,
 .primary-button:focus-visible,
 .primary-button:active {
-  border: 2px solid #8B5CF6 !important;
+  border: 2px solid #7C3AED !important;
+  background: linear-gradient(135deg, #A78BFA 0%, #6D28D9 100%) !important;
+  color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+  box-shadow: 0 5px 14px rgba(109, 40, 217, 0.22);
+}
+.quick-card b {
+  border: 2px solid #7C3AED !important;
+  background: linear-gradient(135deg, #A78BFA 0%, #6D28D9 100%) !important;
+  color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+}
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid #7C3AED;
+  outline-offset: 3px;
 }
