@@ -145,29 +145,29 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import os, re
-          candidates = [Path("android/app/build.gradle"), Path("android/app/build.gradle.kts")]
-          p = next((x for x in candidates if x.exists()), None)
-          if p is None:
-              raise SystemExit("Could not find Android app Gradle file")
+          import os
+          p = Path('android/app/build.gradle')
+          if not p.exists():
+              p = Path('android/app/build.gradle.kts')
+          if not p.exists():
+              raise SystemExit('Android app Gradle file not found')
           s = p.read_text()
-          version_code = 100000 + int(os.environ["RUN_NUMBER"])
-          version_name = "0.1." + os.environ["RUN_NUMBER"]
-          # Match Gradle/Groovy or Kotlin DSL defaultConfig blocks, allowing indentation.
-          match = re.search(r"defaultConfig\s*\{", s)
-          if not match:
-              print("Gradle file checked:", p)
-              print(s[:5000])
-              raise SystemExit("Could not find defaultConfig block in " + str(p))
-          start = match.end()
-          # Replace existing version declarations only within defaultConfig.
-          tail = s[start:]
-          tail = re.sub(r"(?m)^\s*versionCode\s*(?:=\s*)?\d+\s*\n", "", tail)
-          tail = re.sub(r'(?m)^\s*versionName\s*(?:=\s*)?"[^"]+"\s*\n', "", tail)
-          insertion = f'\n        versionCode {version_code}\n        versionName "{version_name}"\n'
-          s = s[:start] + insertion + tail
+          start = s.find('defaultConfig')
+          if start < 0:
+              raise SystemExit('defaultConfig block not found in ' + str(p))
+          brace = s.find('{', start)
+          if brace < 0:
+              raise SystemExit('Opening brace for defaultConfig not found')
+          version_code = 100000 + int(os.environ['RUN_NUMBER'])
+          version_name = '0.1.' + os.environ['RUN_NUMBER']
+          import re
+          # Remove existing version declarations, then insert fresh values.
+          s = re.sub(r'(?m)^\s*versionCode\s*(?:=\s*)?\d+\s*$', '', s)
+          s = re.sub(r'(?m)^\s*versionName\s*(?:=\s*)?["\'][^"\']+["\']\s*$', '', s)
+          insertion = '\n        versionCode ' + str(version_code) + '\n        versionName "' + version_name + '"\n'
+          s = s[:brace + 1] + insertion + s[brace + 1:]
           p.write_text(s)
-          print("Bazaar versionName=" + version_name + ", versionCode=" + str(version_code) + " in " + str(p))
+          print('Bazaar versionName=' + version_name + ', versionCode=' + str(version_code))
           PY
 
       - name: Build signed release AAB
