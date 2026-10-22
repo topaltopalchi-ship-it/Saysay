@@ -147,16 +147,30 @@ jobs:
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./gradlew assembleRelease --no-daemon
 
+      - name: Build signed release AAB
+        working-directory: android
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew bundleRelease --no-daemon
+
       - name: Verify APK signature
         run: |
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           "$APKSIGNER" verify --verbose android/app/build/outputs/apk/release/*.apk
 
-      - name: Upload signed APK artifact
+      - name: Verify AAB signature
+        run: |
+          jarsigner -verify -verbose -certs android/app/build/outputs/bundle/release/*.aab
+
+      - name: Upload signed APK and AAB artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: SaySai-signed-APK
-          path: android/app/build/outputs/apk/release/*.apk
+          name: SaySai-signed-APK-and-AAB
+          path: |
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 30
 
@@ -166,4 +180,6 @@ jobs:
           tag_name: v0.1.${{ github.run_number }}
           name: SaySai v0.1.${{ github.run_number }}
           generate_release_notes: true
-          files: android/app/build/outputs/apk/release/*.apk
+          files: |
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/bundle/release/*.aab
