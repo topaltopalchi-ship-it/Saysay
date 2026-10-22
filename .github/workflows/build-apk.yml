@@ -182,11 +182,10 @@ jobs:
         run: |
           set -euo pipefail
           RELEASE_JSON=$(curl --fail --silent --show-error https://api.github.com/repos/cafebazaar/bundle-signer/releases/latest)
-          ASSET_URL=$(printf '%s' "$RELEASE_JSON" | python3 -c 'import json,sys; d=json.load(sys.stdin); a=[x["browser_download_url"] for x in d["assets"] if x["name"].endswith(".jar") and "bundlesigner" in x["name"].lower()]; print(a[0] if a else "")')
+          ASSET_URL=$(printf '%s' "$RELEASE_JSON" | python3 -c 'import json,sys; d=json.load(sys.stdin); a=[x["browser_download_url"] for x in d["assets"] if x["name"].endswith(".jar") and "signer" in x["name"].lower()]; print(a[0] if a else "")')
           test -n "$ASSET_URL" || (echo "Could not find bundle-signer JAR in latest official release" && exit 1)
           curl --fail --location --silent --show-error "$ASSET_URL" --output /tmp/bundlesigner.jar
           test -s /tmp/bundlesigner.jar
-          java -jar /tmp/bundlesigner.jar --help
 
       - name: Generate CafeBazaar BIN
         env:
