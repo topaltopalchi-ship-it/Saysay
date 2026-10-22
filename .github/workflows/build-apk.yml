@@ -1,4 +1,4 @@
-name: Build and Release Signed Android APK
+name: Build Standalone Bazaar AAB
 
 on:
   workflow_dispatch:
@@ -139,13 +139,32 @@ jobs:
           print("Release signing configuration installed.")
           PY
 
-      - name: Build signed release APK
-        working-directory: android
+      - name: Set new Bazaar version
         env:
-          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew assembleRelease --no-daemon
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, re
+          p = Path("android/app/build.gradle")
+          s = p.read_text()
+          version_code = 100000 + int(os.environ["RUN_NUMBER"])
+          # Ensure a monotonically increasing versionCode and an identifiable versionName.
+          if re.search(r"versionCode\\s+\\d+", s):
+              s = re.sub(r"versionCode\\s+\\d+", f"versionCode {version_code}", s, count=1)
+          else:
+              s, n = re.subn(r"(defaultConfig\\s*\\{)", rf"\\1\\n        versionCode {version_code}", s, count=1)
+              if n != 1:
+                  raise SystemExit("Could not set versionCode in android/app/build.gradle")
+          if re.search(r'versionName\\s+"[^"]+"', s):
+              s = re.sub(r'versionName\\s+"[^"]+"', f'versionName "0.1.{os.environ["RUN_NUMBER"]}"', s, count=1)
+          else:
+              s, n = re.subn(r"(defaultConfig\\s*\\{)", rf'\\1\\n        versionName "0.1.{os.environ["RUN_NUMBER"]}"', s, count=1)
+              if n != 1:
+                  raise SystemExit("Could not set versionName in android/app/build.gradle")
+          p.write_text(s)
+          print(f"Bazaar versionName=0.1.{os.environ['RUN_NUMBER']}, versionCode={version_code}")
+          PY
 
       - name: Build signed release AAB
         working-directory: android
@@ -155,22 +174,15 @@ jobs:
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./gradlew bundleRelease --no-daemon
 
-      - name: Verify APK signature
-        run: |
-          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
-          "$APKSIGNER" verify --verbose android/app/build/outputs/apk/release/*.apk
-
       - name: Verify AAB signature
         run: |
           jarsigner -verify -verbose -certs android/app/build/outputs/bundle/release/*.aab
 
-      - name: Upload signed APK and AAB artifacts
+      - name: Upload standalone signed AAB
         uses: actions/upload-artifact@v4
         with:
-          name: SaySai-signed-APK-and-AAB
-          path: |
-            android/app/build/outputs/apk/release/*.apk
-            android/app/build/outputs/bundle/release/*.aab
+          name: SaySai-Bazaar-AAB
+          path: android/app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 30
 
@@ -181,5 +193,4 @@ jobs:
           name: SaySai v0.1.${{ github.run_number }}
           generate_release_notes: true
           files: |
-            android/app/build/outputs/apk/release/*.apk
             android/app/build/outputs/bundle/release/*.aab
