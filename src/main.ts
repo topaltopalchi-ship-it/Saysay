@@ -1608,7 +1608,7 @@ async function render(): Promise<void> {
   await bindActions();
 
   let content = "";
-  if (activeTab === "dashboard") content = await dashboardView(subscription);
+  if (activeTab === "dashboard") content = `<div class="dashboard-orange-theme">${await dashboardView(subscription)}</div>`;
   else if (activeTab === "sales") {
     const tx = (await listTransactions()).filter(t => t.type === "sale");
     content = pageHead("فروش", "دفتر فروش", "فاکتورهای فروش و مانده مشتریان.", `<button class="primary-button" id="new-sale">＋ ثبت فروش</button>`) +
