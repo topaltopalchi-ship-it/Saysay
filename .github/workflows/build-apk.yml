@@ -227,17 +227,8 @@ jobs:
           set -euo pipefail
           AAB=$(find android/app/build/outputs/bundle/release -maxdepth 1 -name '*.aab' -print -quit)
           test -n "$AAB"
-          java -jar /tmp/bundlesigner.jar genbin \\
-            --v2-signing-enabled true \\
-            --v3-signing-enabled false \\
-            --bundle "$AAB" \\
-            --bin android/app/build/outputs/bundle/release/ \\
-            --ks android/app/sai-sai-upload.jks \\
-            --ks-pass "pass:$KEYSTORE_PASSWORD" \\
-            --ks-key-alias "$KEY_ALIAS" \\
-            --key-pass "pass:$KEY_PASSWORD"
+          java -jar /tmp/bundlesigner.jar genbin --v2-signing-enabled true --v3-signing-enabled false --bundle "$AAB" --bin android/app/build/outputs/bundle/release/ --ks android/app/sai-sai-upload.jks --ks-pass "pass:$KEYSTORE_PASSWORD" --ks-key-alias "$KEY_ALIAS" --key-pass "pass:$KEY_PASSWORD"
           find android/app/build/outputs/bundle/release -maxdepth 1 -type f -name '*.bin' -print -quit | grep -q .
-
       - name: Upload signed AAB and CafeBazaar BIN
         uses: actions/upload-artifact@v4
         with:
