@@ -1,4 +1,4 @@
-import { SpeechRecognition } from "@capacitor-community/speech-recognition";
+import { SpeechRecognition } from "./vosk-speech";
 import { speakSaiSai } from "./voice-assistant";
 import { assertGuestFeatureAvailable, withGuestFeature } from "./guest-quota";
 
@@ -72,7 +72,7 @@ async function listenAndCalculate(modal: HTMLElement): Promise<void> {
   assertGuestFeatureAvailable("calculator");
   const button=modal.querySelector<HTMLButtonElement>("#calc-voice")!;
   const available=await SpeechRecognition.available().catch(()=>({available:false}));
-  if(!available.available){ alert("تشخیص صدا در این دستگاه در دسترس نیست"); return; }
+  if(!available.available){ alert("تشخیص صدای آفلاین در این نسخه در دسترس نیست"); return; }
   const permission=await SpeechRecognition.requestPermissions().catch(()=>null);
   if(permission && permission.speechRecognition!=="granted"){ alert("اجازه میکروفون لازم است"); return; }
   button.disabled=true; button.textContent="🎙 در حال شنیدن…";
