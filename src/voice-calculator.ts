@@ -28,7 +28,7 @@ function wordNumbers(text: string): string {
     }
     return total+current;
   };
-  const tokens=text.split(/(\\s+)/);
+  const tokens=text.split(/(\s+)/);
   const out:string[]=[];
   let pending:string[]=[];
   const flush=()=>{ if(pending.length){ out.push(String(parseWords(pending))); pending=[]; } };
