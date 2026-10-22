@@ -22,7 +22,6 @@ export async function scanBarcode(): Promise<string | null> {
     if (!active) return;
     active = false;
     try { stopScanner?.(); } catch { /* Scanner may already have stopped. */ }
-    try { reader.reset(); } catch { /* Reader may not have started. */ }
     const stream = video.srcObject;
     if (stream instanceof MediaStream) stream.getTracks().forEach(track => track.stop());
     video.pause();
