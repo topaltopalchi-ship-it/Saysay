@@ -1,4 +1,4 @@
-import { SpeechRecognition } from "@capacitor-community/speech-recognition";
+import { SpeechRecognition } from "./vosk-speech";
 import { Capacitor } from "@capacitor/core";
 import { TextToSpeech } from "@capacitor-community/text-to-speech";
 
@@ -144,10 +144,10 @@ export function bindVoiceProductFieldAssistant(
       if (!shouldContinue) return;
     }
     const available = await SpeechRecognition.available().catch(() => ({ available: false }));
-    if (!available.available) { notify("تشخیص صدا در این دستگاه در دسترس نیست"); return; }
+    if (!available.available) { notify("تشخیص صدای آفلاین در این نسخه در دسترس نیست"); return; }
     const permission = await SpeechRecognition.requestPermissions().catch(() => null);
     if (permission && permission.speechRecognition !== "granted") {
-      notify("اجازه دسترسی به میکروفون و تشخیص صدا لازم است");
+      notify("اجازه دسترسی به میکروفون لازم است");
       return;
     }
     button.disabled = true;
@@ -181,9 +181,9 @@ export function bindVoiceProductAssistant(onConfirm: (draft: VoiceProductDraft) 
   if (!button) return;
   button.addEventListener("click", async () => {
     const available = await SpeechRecognition.available().catch(() => ({ available:false }));
-    if (!available.available) { notify("تشخیص صدا در این دستگاه در دسترس نیست"); return; }
+    if (!available.available) { notify("تشخیص صدای آفلاین در این نسخه در دسترس نیست"); return; }
     const permission = await SpeechRecognition.requestPermissions().catch(() => null);
-    if (permission && permission.speechRecognition !== "granted") { notify("اجازه دسترسی به میکروفون و تشخیص صدا لازم است"); return; }
+    if (permission && permission.speechRecognition !== "granted") { notify("اجازه دسترسی به میکروفون لازم است"); return; }
     button.disabled=true; button.textContent="🎙 در حال شنیدن…";
     try {
       await prepareSpeechRecognition();
@@ -220,7 +220,7 @@ export async function speakSaiSai(message: string): Promise<boolean> {
   const text = message.trim();
   if (!text) return false;
 
-  // Prefer the native Android engine and verify that Persian is actually supported.
+  // Prefer native text-to-speech when available; this does not affect Vosk speech recognition.
   if (Capacitor.isNativePlatform()) {
     try {
       const supported = await TextToSpeech.isLanguageSupported({ lang: "fa-IR" }).catch(() => ({ supported: false }));
@@ -306,7 +306,7 @@ export function bindVoiceAssistant(onConfirm: (draft: VoiceSaleDraft) => Promise
 
     const permission = await SpeechRecognition.requestPermissions().catch(() => null);
     if (permission && permission.speechRecognition !== "granted") {
-      notify("اجازه دسترسی به میکروفون و تشخیص صدا لازم است");
+      notify("اجازه دسترسی به میکروفون لازم است");
       return;
     }
 
@@ -353,7 +353,7 @@ export function bindVoiceAssistant(onConfirm: (draft: VoiceSaleDraft) => Promise
         try {
           nextTranscript = await listenForSaleTurn("جنس بعدی، تعداد و قیمت واحد را بگویید؛ برای پایان بگویید تمام");
         } catch {
-          // Don't loop forever on Android's intermittent Persian NO_MATCH response.
+          // Don't loop forever if Vosk returns no result.
           if (collectedItems.length) break;
           throw new Error("جنس تشخیص داده نشد. دوباره ثبت فروش با صدا را بزنید و نزدیک میکروفون صحبت کنید.");
         }
@@ -469,12 +469,12 @@ export function bindVoiceQuestionAssistant(onAnswer: (question: string) => Promi
     if (isProcessing) return;
     const available = await SpeechRecognition.available().catch(() => ({ available: false }));
     if (!available.available) {
-      notify("تشخیص گفتار روی این دستگاه در دسترس نیست. سرویس تشخیص گفتار فارسی گوشی را فعال کنید.");
+      notify("تشخیص گفتار آفلاین در این نسخه در دسترس نیست.");
       return;
     }
     const permission = await SpeechRecognition.requestPermissions().catch(() => null);
     if (permission && permission.speechRecognition !== "granted") {
-      notify("اجازه دسترسی به میکروفون و تشخیص صدا لازم است");
+      notify("اجازه دسترسی به میکروفون لازم است");
       return;
     }
     isProcessing = true;
@@ -487,7 +487,7 @@ export function bindVoiceQuestionAssistant(onAnswer: (question: string) => Promi
       if (!isListening) return;
       let question = "";
       let lastError: unknown = null;
-      // Android's recognizer can intermittently return ERROR_NO_MATCH for Persian.
+      // Vosk can occasionally return an empty result in noisy environments.
       // Retry once after resetting the recognizer instead of immediately showing its English error.
       for (let attempt = 0; attempt < 2 && !question; attempt++) {
         try {
@@ -528,7 +528,7 @@ export function bindVoiceQuestionAssistant(onAnswer: (question: string) => Promi
       notify(spoken ? answer : answer + "\n\nبرای شنیدن پاسخ، موتور تبدیل متن به گفتار فارسی را در تنظیمات گوشی فعال کنید.");
     } catch (error) {
       if (!/cancel|abort/i.test(error instanceof Error ? error.name + error.message : String(error))) {
-        notify("تشخیص صوتی ناموفق بود. اینترنت و سرویس تشخیص گفتار فارسی گوشی را بررسی کنید و دوباره تلاش کنید.");
+        notify("تشخیص صوتی ناموفق بود. اگر مدل هنوز دریافت نشده، اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.");
       }
     } finally {
       isProcessing = false;
