@@ -17,7 +17,7 @@ if not png.exists():
 
 source = Image.open(png).convert("RGBA")
 
-# Render launcher resources at each Android density from the provided image.
+# Generate launcher resources at each Android density from the provided image.
 for density, size in {
     "mdpi": 48,
     "hdpi": 72,
