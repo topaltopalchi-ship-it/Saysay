@@ -1,6 +1,6 @@
 import { Capacitor, registerPlugin } from "@capacitor/core";
 
-type VoskStartOptions = { prompt?: string };
+type VoskStartOptions = { prompt?: string; language?: string; maxResults?: number; partialResults?: boolean; popup?: boolean };
 type VoskResult = { text: string };
 type VoskPlugin = {
   requestPermissions(): Promise<{ granted: boolean }>;
