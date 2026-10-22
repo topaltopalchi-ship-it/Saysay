@@ -59,7 +59,7 @@ jobs:
           # Prefer centralized dependency repositories when this Gradle template has them.
           if "dependencyResolutionManagement" in source:
               start = source.index("dependencyResolutionManagement")
-              match = re.search(r'repositories\s*\{', source[start:])
+          match = re.search(r"defaultConfig\s*\{", s)
               if not match:
                   raise SystemExit("dependencyResolutionManagement exists but has no repositories block")
               pos = start + match.end()
@@ -71,7 +71,7 @@ jobs:
               root = Path("android/build.gradle")
               root_source = root.read_text() if root.exists() else ""
               if jitpack not in root_source:
-                  match = re.search(r'(allprojects\s*\{[\s\S]*?repositories\s*\{)', root_source)
+          match = re.search(r"defaultConfig\s*\{", s)
                   if match:
                       root_source = root_source[:match.end()] + "\n        " + jitpack + root_source[match.end():]
                   else:
@@ -154,7 +154,7 @@ jobs:
           version_code = 100000 + int(os.environ["RUN_NUMBER"])
           version_name = "0.1." + os.environ["RUN_NUMBER"]
           # Match Gradle/Groovy or Kotlin DSL defaultConfig blocks, allowing indentation.
-          match = re.search(r"defaultConfig\\s*\\{", s)
+          match = re.search(r"defaultConfig\s*\{", s)
           if not match:
               print("Gradle file checked:", p)
               print(s[:5000])
@@ -162,9 +162,9 @@ jobs:
           start = match.end()
           # Replace existing version declarations only within defaultConfig.
           tail = s[start:]
-          tail = re.sub(r"(?m)^\\s*versionCode\\s*(?:=\\s*)?\\d+\\s*\\n", "", tail)
-          tail = re.sub(r'(?m)^\\s*versionName\\s*(?:=\\s*)?"[^"]+"\\s*\\n', "", tail)
-          insertion = "\\n        versionCode " + str(version_code) + "\\n        versionName \\"" + version_name + "\\"\\n"
+          tail = re.sub(r"(?m)^\s*versionCode\s*(?:=\s*)?\d+\s*\n", "", tail)
+          tail = re.sub(r'(?m)^\s*versionName\s*(?:=\s*)?"[^"]+"\s*\n', "", tail)
+          insertion = f'\n        versionCode {version_code}\n        versionName "{version_name}"\n'
           s = s[:start] + insertion + tail
           p.write_text(s)
           print("Bazaar versionName=" + version_name + ", versionCode=" + str(version_code) + " in " + str(p))
