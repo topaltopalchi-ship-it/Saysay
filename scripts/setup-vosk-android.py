@@ -240,15 +240,15 @@ plugin_path.write_text(plugin)
 # Ensure Bundle is imported before injecting/creating that method.
 if "import android.os.Bundle;" not in source:
     source = re.sub(
-        r"(^package [^;]+;\\s*)",
-        r"\\1\\nimport android.os.Bundle;\\n",
+        r"(^package [^;]+;\s*)",
+        r"\1\nimport android.os.Bundle;\n",
         source,
         count=1,
         flags=re.M,
     )
 
 if "registerPlugin(VoskSpeechRecognitionPlugin.class);" not in source:
-    on_create = re.search(r"public void onCreate\\(Bundle savedInstanceState\\)\\s*\\{", source)
+    on_create = re.search(r"public void onCreate\(Bundle savedInstanceState\)\s*\{", source)
     if on_create:
         body_start = on_create.end()
         body_end = source.find("}", body_start)
@@ -256,11 +256,11 @@ if "registerPlugin(VoskSpeechRecognitionPlugin.class);" not in source:
         if "super.onCreate(savedInstanceState);" in body:
             source = source[:body_start] + body.replace(
                 "super.onCreate(savedInstanceState);",
-                "super.onCreate(savedInstanceState);\\n        registerPlugin(VoskSpeechRecognitionPlugin.class);",
+                "super.onCreate(savedInstanceState);\n        registerPlugin(VoskSpeechRecognitionPlugin.class);",
                 1,
             ) + source[body_start + len(body):]
         else:
-            source = source[:body_start] + "\\n        super.onCreate(savedInstanceState);\\n        registerPlugin(VoskSpeechRecognitionPlugin.class);\\n" + source[body_start:]
+            source = source[:body_start] + "\n        super.onCreate(savedInstanceState);\n        registerPlugin(VoskSpeechRecognitionPlugin.class);\n" + source[body_start:]
     else:
         class_end = source.rfind("}")
         if class_end < 0:
