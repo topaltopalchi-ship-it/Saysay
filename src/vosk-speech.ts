@@ -53,6 +53,8 @@ export async function prepareVoskModel(): Promise<void> {
   try {
     await NativeVosk.addListener("modelDownloadProgress", showModelProgress);
     await NativeVosk.prepare();
+    // Clear the banner even if an older native plugin never emits a terminal "ready" event.
+    showModelProgress({ status: "ready", percent: 100, downloadedBytes: 1, totalBytes: 1 });
   } catch (error) {
     showModelProgress({ status: "error", message: error instanceof Error ? error.message : "دانلود مدل فارسی انجام نشد. اتصال اینترنت را بررسی کنید." });
   }
