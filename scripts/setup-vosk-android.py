@@ -62,6 +62,19 @@ public class VoskSpeechRecognitionPlugin extends Plugin implements RecognitionLi
     private PluginCall activeCall;
 
     @PluginMethod
+    public void prepare(PluginCall call) {
+        executor.execute(() -> {
+            try {
+                ensureModel();
+                main.post(() -> call.resolve());
+            } catch (Exception e) {
+                Log.e(TAG, "Model preload failed", e);
+                main.post(() -> call.reject("دریافت مدل گفتار فارسی انجام نشد؛ با اتصال اینترنت دوباره تلاش می‌شود."));
+            }
+        });
+    }
+
+    @PluginMethod
     public void requestPermissions(PluginCall call) {
         if (getPermissionState("microphone") == PermissionState.GRANTED) {
             JSObject result = new JSObject(); result.put("granted", true); call.resolve(result); return;
