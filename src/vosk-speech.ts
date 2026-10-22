@@ -8,6 +8,7 @@ type VoskPlugin = {
   isListening(): Promise<{ listening: boolean }>;
   start(options?: VoskStartOptions): Promise<VoskResult>;
   stop(): Promise<void>;
+  addListener(eventName: "modelDownloadProgress", listenerFunc: (progress: ModelProgress) => void): Promise<{ remove: () => Promise<void> }>;
 };
 
 /** Persian offline speech recognition. Intentionally has no Android speech-service fallback. */
