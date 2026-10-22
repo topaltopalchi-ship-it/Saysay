@@ -35,7 +35,6 @@ import org.vosk.Model;
 import org.vosk.Recognizer;
 import org.vosk.android.SpeechService;
 import org.vosk.android.RecognitionListener;
-import org.vosk.android.RecognitionEvent;
 import org.vosk.android.StorageService;
 import org.json.JSONObject;
 import java.io.BufferedInputStream;
