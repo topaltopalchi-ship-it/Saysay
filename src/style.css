@@ -1068,3 +1068,12 @@ a{color:#0284C7}
   color: #ea580c;
 }
 .dashboard-orange-theme .empty-inline span { color: #ea580c; }
+
+
+/* بنفش شدن حاشیه‌های دکمه‌های اصلی */
+.primary-button,
+.primary-button:hover,
+.primary-button:focus-visible,
+.primary-button:active {
+  border: 2px solid #8B5CF6 !important;
+}
