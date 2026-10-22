@@ -30,9 +30,34 @@ import { buildBusinessInsights, dailyBrief, customerScore, type BusinessInsight 
 type Tab = "dashboard" | "sales" | "purchases" | "orders" | "inventory" | "people" | "reports" | "more" | "checks";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
+const iconSvg = (name: string, size = 20): string => {
+  const paths: Record<string, string> = {
+    home: '<path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/>',
+    chart: '<path d="M3 3v18h18"/><path d="m7 14 4-4 4 3 5-7"/>',
+    shopping: '<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/>',
+    clipboard: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M8 10h8M8 14h8M8 18h5"/>',
+    boxes: '<path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="M3 8v9l9 5 9-5V8M12 13v9"/>',
+    users: '<path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+    report: '<path d="M4 19V5M4 19h17"/><rect x="7" y="11" width="3" height="5" rx="1"/><rect x="13" y="7" width="3" height="9" rx="1"/><rect x="19" y="4" width="2" height="12" rx="1"/>',
+    wallet: '<rect x="3" y="5" width="18" height="15" rx="2"/><path d="M3 9h18M16 14h2"/>',
+    check: '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
+    brain: '<path d="M12 18V5a3 3 0 0 0-5.8-1A4 4 0 0 0 4 11a4 4 0 0 0 3 7h5ZM12 18V5a3 3 0 0 1 5.8-1A4 4 0 0 1 20 11a4 4 0 0 1-3 7h-5"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    package: '<path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="M3 8v9l9 5 9-5V8M12 13v9"/>',
+    banknote: '<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 9h.01M18 15h.01"/>',
+    mic: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/>',
+    volume: '<path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15 9a5 5 0 0 1 0 6M18 5a10 10 0 0 1 0 14"/>',
+    arrowUp: '<path d="M12 19V5M5 12l7-7 7 7"/>',
+    arrowDown: '<path d="M12 5v14M19 12l-7 7-7-7"/>',
+    minus: '<path d="M5 12h14"/>',
+    adjust: '<path d="M4 8h16M4 16h16M8 4v8M16 12v8"/>',
+    settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.7 2.9-.2-.1a1.7 1.7 0 0 0-1.8-.1 1.7 1.7 0 0 0-1 1.5v.2h-3.4v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.1l-.2.1-1.7-2.9.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H5.7v-3.4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9L7 7.6l1.7-2.9.2.1a1.7 1.7 0 0 0 1.8.1 1.7 1.7 0 0 0 1-1.5v-.2h3.4v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.1l.2-.1 1.7 2.9-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1h.2V15h-.2a1.7 1.7 0 0 0-1.5 0Z"/>'
+  };
+  return `<svg class="ui-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.check}</svg>`;
+};
 const navItems: Array<[Tab, string, string]> = [
-  ["dashboard", "داشبورد", "⌂"], ["sales", "فروش", "↗"], ["purchases", "خرید", "↙"],
-  ["orders", "سفارشات", "▣"], ["inventory", "موجودی", "▤"], ["people", "اشخاص", "♙"], ["reports", "گزارش‌ها", "◫"], ["more", "خزانه", "▣"], ["checks", "چک‌ها", "✓"],
+  ["dashboard", "داشبورد", "home"], ["sales", "فروش", "chart"], ["purchases", "خرید", "shopping"],
+  ["orders", "سفارشات", "clipboard"], ["inventory", "موجودی", "boxes"], ["people", "اشخاص", "users"], ["reports", "گزارش‌ها", "report"], ["more", "خزانه", "wallet"], ["checks", "چک‌ها", "check"],
 ];
 const money = new Intl.NumberFormat("fa-IR");
 
@@ -382,12 +407,12 @@ function layout(content: string, subscription: Subscription): void {
         <div class="header-actions">
           <label class="header-currency" aria-label="انتخاب واحد پول"><span>واحد پول</span><select id="header-currency-unit"><option value="toman" ${getCurrencyUnit() === "toman" ? "selected" : ""}>تومان</option><option value="rial" ${getCurrencyUnit() === "rial" ? "selected" : ""}>ریال</option></select></label>
           <span class="plan-pill ${subscription.status}">${isGuestMode() ? "مهمان · سهمیه محدود" : subscription.status === "active" ? "اشتراک فعال" : "اشتراک لازم است"}</span>
-          <button class="icon-button" id="settings" aria-label="حالت کاربری">⚙</button>
+          <button class="icon-button" id="settings" aria-label="حالت کاربری">${iconSvg("settings", 20)}</button>
         </div>
       </header>
       <div id="view">${content}</div>
       <nav class="bottom-nav" aria-label="ناوبری اصلی">
-        ${navItems.filter(([id]) => isProfessionalMode() || (id !== "reports" && id !== "more" && id !== "checks")).map(([id,label,icon]) => `<button class="nav-item ${activeTab === id ? "active" : ""}" data-nav="${id}"><span>${icon}</span><small>${label}</small></button>`).join("")}
+        ${navItems.filter(([id]) => isProfessionalMode() || (id !== "reports" && id !== "more" && id !== "checks")).map(([id,label,icon]) => `<button class="nav-item ${activeTab === id ? "active" : ""}" data-nav="${id}"><span>${iconSvg(icon, 20)}</span><small>${label}</small></button>`).join("")}
       </nav>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </main>`;
@@ -425,13 +450,13 @@ async function dashboardView(subscription: Subscription): Promise<string> {
     '<section class="panel"><div class="section-head"><div><h3>🧠 مغز سای‌سای</h3><span class="muted">سای‌سای به‌جای نمایش عدد، تصمیم پیشنهادی می‌دهد.</span></div><strong>' + money.format(insights.length) + ' نکته</strong></div>' +
     (insightHtml || '<div class="empty-inline"><p>فعلاً نکته مهمی پیدا نشد.</p></div>') + '</section>' +
     '<section class="section"><div class="section-head"><h3>✈️ امروز چه کار کنم؟</h3><span class="muted">مدیریت هوشمند</span></div><div class="quick-grid">' +
-    '<button class="quick-card" data-action="daily-brief"><b>🧠</b><span>گزارش امروز</span><small>اولویت‌های کسب‌وکار</small></button>' +
-    '<button class="quick-card" data-action="sale"><b>＋</b><span>فروش جدید</span><small>ثبت سریع فاکتور</small></button>' +
-    '<button class="quick-card" data-action="purchase"><b>⇩</b><span>ثبت خرید</span><small>افزایش موجودی</small></button>' +
-    '<button class="quick-card" data-action="receipt"><b>↙</b><span>دریافت وجه</span><small>پیگیری مطالبات</small></button>' +
-    '<button class="quick-card" data-action="market-prices"><b>💱</b><span>قیمت‌های بازار</span><small>نمایش دلار، طلا و شاخص‌ها</small></button>' +
-    '<button class="quick-card voice-quick-card" id="voice-sale"><b>🎙</b><span>ثبت فروش با صدا</span><small>فارسی صحبت کنید</small></button>' +
-    '<button class="quick-card voice-quick-card" id="voice-query"><b>🔊</b><span>از سای‌سای بپرس</span><small>فروش، قیمت، موجودی</small></button>' +
+    '<button class="quick-card" data-action="daily-brief"><b>' + iconSvg("brain", 20) + '</b><span>گزارش امروز</span><small>اولویت‌های کسب‌وکار</small></button>' +
+    '<button class="quick-card" data-action="sale"><b>' + iconSvg("plus", 20) + '</b><span>فروش جدید</span><small>ثبت سریع فاکتور</small></button>' +
+    '<button class="quick-card" data-action="purchase"><b>' + iconSvg("package", 20) + '</b><span>ثبت خرید</span><small>افزایش موجودی</small></button>' +
+    '<button class="quick-card" data-action="receipt"><b>' + iconSvg("banknote", 20) + '</b><span>دریافت وجه</span><small>پیگیری مطالبات</small></button>' +
+    '<button class="quick-card" data-action="market-prices"><b>' + iconSvg("chart", 20) + '</b><span>قیمت‌های بازار</span><small>نمایش دلار، طلا و شاخص‌ها</small></button>' +
+    '<button class="quick-card voice-quick-card" id="voice-sale"><b>' + iconSvg("mic", 20) + '</b><span>ثبت فروش با صدا</span><small>فارسی صحبت کنید</small></button>' +
+    '<button class="quick-card voice-quick-card" id="voice-query"><b>' + iconSvg("volume", 20) + '</b><span>از سای‌سای بپرس</span><small>فروش، قیمت، موجودی</small></button>' +
     '</div></section>' +
     '<section class="section panel"><div class="section-head"><h3>آخرین تراکنش‌ها</h3><span class="muted">۵ مورد اخیر</span></div>' + recent + '</section>';
 }
@@ -439,7 +464,7 @@ function transactionRow(t: Transaction): string {
   const labels: Record<Transaction["type"], string> = {
     sale: "فروش", purchase: "خرید", receipt: "دریافت", payment: "پرداخت", expense: "هزینه", stockAdjustment: "اصلاح موجودی"
   };
-  const icons: Record<Transaction["type"], string> = { sale: "↗", purchase: "↙", receipt: "↓", payment: "↑", expense: "−", stockAdjustment: "±" };
+  const icons: Record<Transaction["type"], string> = { sale: iconSvg("chart", 18), purchase: iconSvg("package", 18), receipt: iconSvg("arrowDown", 18), payment: iconSvg("arrowUp", 18), expense: iconSvg("minus", 18), stockAdjustment: iconSvg("adjust", 18) };
   return `<div class="transaction-row"><div class="transaction-icon">${icons[t.type]}</div><div class="transaction-main"><strong>${labels[t.type]}${t.invoiceNumber ? ` · ${t.invoiceNumber}` : ""}</strong><small>${t.description || dateLabel(t.date)} · ${dateLabel(t.date)}</small></div><b>${rial(t.amount)}</b></div>`;
 }
 
