@@ -70,6 +70,7 @@ public class VoskSpeechRecognitionPlugin extends Plugin implements RecognitionLi
                 main.post(() -> call.resolve());
             } catch (Exception e) {
                 Log.e(TAG, "Model preload failed", e);
+                reportModelProgress("error", 0, 0, "دانلود مدل فارسی انجام نشد. اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.");
                 main.post(() -> call.reject("دریافت مدل گفتار فارسی انجام نشد؛ با اتصال اینترنت دوباره تلاش می‌شود."));
             }
         });
@@ -115,6 +116,18 @@ public class VoskSpeechRecognitionPlugin extends Plugin implements RecognitionLi
         });
     }
 
+    private void reportModelProgress(String status, long downloadedBytes, long totalBytes, String message) {
+        main.post(() -> {
+            JSObject data = new JSObject();
+            data.put("status", status);
+            data.put("downloadedBytes", downloadedBytes);
+            data.put("totalBytes", totalBytes);
+            data.put("percent", totalBytes > 0 ? Math.min(100, (int) ((downloadedBytes * 100L) / totalBytes)) : 0);
+            if (message != null) data.put("message", message);
+            notifyListeners("modelDownloadProgress", data);
+        });
+    }
+
     private synchronized void ensureModel() throws Exception {
         if (model != null) return;
         File modelDir = new File(getContext().getFilesDir(), MODEL_NAME);
@@ -138,10 +151,20 @@ public class VoskSpeechRecognitionPlugin extends Plugin implements RecognitionLi
                     connection.connect();
                     int response = connection.getResponseCode();
                     if (response != 200) throw new Exception("Model download HTTP " + response);
+                    long totalBytes = connection.getContentLengthLong();
+                    long downloadedBytes = 0;
+                    reportModelProgress("downloading", 0, totalBytes, null);
                     try (InputStream in = new BufferedInputStream(connection.getInputStream());
                          FileOutputStream out = new FileOutputStream(zipFile)) {
-                        byte[] buffer = new byte[32768]; int n;
-                        while ((n = in.read(buffer)) >= 0) out.write(buffer, 0, n);
+                        byte[] buffer = new byte[32768]; int n; long lastReport = 0;
+                        while ((n = in.read(buffer)) >= 0) {
+                            out.write(buffer, 0, n);
+                            downloadedBytes += n;
+                            if (downloadedBytes - lastReport >= 262144L || (totalBytes > 0 && downloadedBytes >= totalBytes)) {
+                                reportModelProgress("downloading", downloadedBytes, totalBytes, null);
+                                lastReport = downloadedBytes;
+                            }
+                        }
                     }
                     if (!zipFile.isFile() || zipFile.length() < 1000000L) {
                         throw new Exception("Downloaded Persian model archive is too small");
@@ -163,6 +186,7 @@ public class VoskSpeechRecognitionPlugin extends Plugin implements RecognitionLi
                 }
             }
             if (!downloaded) throw new Exception("Persian model download failed after retries", downloadFailure);
+            reportModelProgress("extracting", zipFile.length(), zipFile.length(), null);
             tempDir.mkdirs();
             try (ZipInputStream zin = new ZipInputStream(new BufferedInputStream(new java.io.FileInputStream(zipFile)))) {
                 ZipEntry entry;
@@ -189,6 +213,7 @@ public class VoskSpeechRecognitionPlugin extends Plugin implements RecognitionLi
             deleteRecursively(tempDir); zipFile.delete();
         }
         model = new Model(modelDir.getAbsolutePath());
+        reportModelProgress("ready", 1, 1, null);
     }
 
     private void beginRecognition(PluginCall call) {
