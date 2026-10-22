@@ -55,10 +55,14 @@ jobs:
           source = manifest.read_text()
           permission = '<uses-permission android:name="android.permission.CAMERA" />'
           if "android.permission.CAMERA" not in source:
-              source = re.sub(r"(<manifest\\b[^>]*>)", r"\\1\\n    " + permission, source, count=1)
+              source, count = re.subn(r"(<manifest\b[^>]*>)", lambda match: match.group(1) + "\n    " + permission, source, count=1)
+              if count != 1:
+                  raise SystemExit("Could not locate manifest root to add camera permission")
           feature = '<uses-feature android:name="android.hardware.camera" android:required="false" />'
           if "android.hardware.camera" not in source:
-              source = re.sub(r"(<manifest\\b[^>]*>)", r"\\1\\n    " + feature, source, count=1)
+              source, count = re.subn(r"(<manifest\b[^>]*>)", lambda match: match.group(1) + "\n    " + feature, source, count=1)
+              if count != 1:
+                  raise SystemExit("Could not locate manifest root to add optional camera feature")
           if "android.permission.CAMERA" not in source or "<manifest" not in source:
               raise SystemExit("Could not add camera permission to Android manifest")
           manifest.write_text(source)
