@@ -212,7 +212,8 @@ public class VoskSpeechRecognitionPlugin extends Plugin implements RecognitionLi
             if (!extracted.renameTo(modelDir)) throw new Exception("Could not install Persian model");
             deleteRecursively(tempDir); zipFile.delete();
         }
-        model = new Model(modelDir.getAbsolutePath());
+        model = new Model(modelDir.getAbsolutePath())
+        reportModelProgress("ready", 1, 1, null);
     }
 
     private void beginRecognition(PluginCall call) {
