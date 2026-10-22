@@ -1020,3 +1020,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .bottom-nav,.bottom-navigation,.nav-bar{background:#FFFFFF;border-color:#A5DDF8}
 .nav-item.active,.bottom-nav .active{background:#E0F2FE;color:#0284C7}
 a{color:#0284C7}
+
+/* Offline Persian speech model download progress */
+#saisai-model-download{position:fixed;z-index:10000;top:calc(env(safe-area-inset-top,0px) + 12px);left:12px;right:12px;max-width:520px;margin:0 auto;padding:14px 16px;border:1px solid var(--border-color,#d1d5db);border-radius:16px;background:var(--card-bg,#fff);color:var(--text-color,#172033);box-shadow:0 8px 30px #0002;font-size:14px}
+.saisai-model-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#saisai-model-status{margin:8px 0 10px;font-size:13px;line-height:1.6}
+.saisai-model-track{height:8px;border-radius:999px;background:#e5e7eb;overflow:hidden}
+#saisai-model-bar{height:100%;width:0;background:#0ea5e9;border-radius:999px;transition:width .2s ease}
+#saisai-model-download[data-status="error"]{border-color:#dc2626}
+#saisai-model-download[data-status="ready"]{border-color:#16a34a}
