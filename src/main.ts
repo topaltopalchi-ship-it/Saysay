@@ -51,6 +51,22 @@ async function openAccountThenSubscription(initialMode: "login" | "signup"): Pro
 }
 window.addEventListener("sai-sai-quota-account", () => { void openAccountThenSubscription("signup"); });
 window.addEventListener("sai-sai-quota-subscription", () => { void openAccountThenSubscription("signup"); });
+async function openSubscriptionManager(): Promise<void> {
+  // Show immediate feedback instead of leaving the user with an apparently dead button
+  // while the subscription status request is pending.
+  document.querySelector("#sub-modal")?.remove();
+  document.body.insertAdjacentHTML("beforeend", `<div class="modal-backdrop" id="sub-loading-modal"><section class="modal"><span class="eyebrow">اشتراک سای‌سای</span><h2>مدیریت اشتراک</h2><p class="muted" role="status">در حال بررسی وضعیت اشتراک…</p><button class="secondary-button wide" id="sub-loading-close">بستن</button></section></div>`);
+  document.querySelector("#sub-loading-close")?.addEventListener("click", () => document.querySelector("#sub-loading-modal")?.remove());
+  try {
+    const subscription = await getSubscription();
+    document.querySelector("#sub-loading-modal")?.remove();
+    showSubscription(subscription);
+  } catch (e) {
+    document.querySelector("#sub-loading-modal")?.remove();
+    showSubscriptionError(e instanceof Error ? e.message : "وضعیت اشتراک دریافت نشد.");
+  }
+}
+
 
 function numericValue(value: string | number | undefined | null): number {
   const normalized = String(value ?? "")
@@ -105,14 +121,9 @@ modal.querySelector("#account-action")?.addEventListener("click", async () => {
 });
   modal.querySelector("#settings-close")?.addEventListener("click", () => modal.remove());
   modal.querySelector("#pricing-settings")?.addEventListener("click", async () => { modal.remove(); document.body.insertAdjacentHTML("beforeend", pricingSettingsModal()); bindPricingSettingsModal(); });
-  modal.querySelector("#subscription-settings")?.addEventListener("click", async () => {
+  modal.querySelector("#subscription-settings")?.addEventListener("click", () => {
     modal.remove();
-    try {
-      const subscription = await getSubscription();
-      showSubscription(subscription);
-    } catch (e) {
-      showSubscriptionError(e instanceof Error ? e.message : "وضعیت اشتراک دریافت نشد.");
-    }
+    void openSubscriptionManager();
   });
   modal.querySelector("#settings-save")?.addEventListener("click", async () => {
     const unit = modal.querySelector<HTMLSelectElement>("#currency-unit")?.value === "toman" ? "toman" : "rial";
@@ -296,14 +307,9 @@ function bindUiModeModal(): void {
   const modal = document.querySelector<HTMLDivElement>("#ui-mode-modal");
   if (!modal) return;
   modal.querySelector("#ui-mode-close")?.addEventListener("click", () => modal.remove());
-  modal.querySelector("#subscription-settings")?.addEventListener("click", async () => {
+  modal.querySelector("#subscription-settings")?.addEventListener("click", () => {
     modal.remove();
-    try {
-      const subscription = await getSubscription();
-      showSubscription(subscription);
-    } catch (e) {
-      showSubscriptionError(e instanceof Error ? e.message : "وضعیت اشتراک دریافت نشد.");
-    }
+    void openSubscriptionManager();
   });
   modal.querySelector("#ui-mode-save")?.addEventListener("click", async () => {
     const enabled = modal.querySelector<HTMLInputElement>("#professional-mode")?.checked ?? false;
