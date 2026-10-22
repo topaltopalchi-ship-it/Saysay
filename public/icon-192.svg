@@ -13,6 +13,6 @@
  <path d="M250 575 L414 425 L485 480 L742 225" fill="none" stroke="url(#arrow)" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/>
  <path d="M680 236 L788 196 L776 310 L744 268 L704 282Z" fill="#59f4ff" stroke="#b6ffff" stroke-width="3" stroke-linejoin="round"/>
  <path d="M244 592 L244 482 Q244 468 260 468 L280 468 Q294 468 294 482 L294 579 Q294 597 311 597 Q328 597 328 579 L328 527 Q328 513 342 513 L362 513 Q376 513 376 527 L376 579 Q376 597 393 597 Q410 597 410 579 L410 466 Q410 452 424 452 L444 452 Q458 452 458 466 L458 579 Q458 597 475 597 Q492 597 492 579 L492 533 Q492 519 506 519 L526 519 Q540 519 540 533 L540 579 Q540 597 557 597 Q574 597 574 579 L574 478 Q574 464 588 464 L608 464 Q622 464 622 478 L622 579 Q622 597 639 597 Q656 597 656 579 L656 532 Q656 518 670 518 L690 518 Q704 518 704 532 L704 579 Q704 597 721 597 Q738 597 738 579 L738 490 Q738 476 752 476 L772 476 Q786 476 786 490 L786 592 Q786 640 742 640 L287 640 Q244 640 244 592Z" fill="url(#letters)"/>
- <text x="512" y="746" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-family="Tahoma,Arial,sans-serif" font-size="112" font-weight="900" fill="url(#letters)">سای‌سای</text>
+ <text x="512" y="746" text-anchor="middle" direction="rtl" unicode-bidi="plaintext" font-family="Tahoma,Arial,sans-serif" font-size="112" font-weight="900" fill="url(#letters)">سایسای</text>
 </g>
 </svg>
