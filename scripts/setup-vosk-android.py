@@ -266,43 +266,44 @@ public class VoskSpeechRecognitionPlugin extends Plugin implements RecognitionLi
 '''.replace("__PACKAGE__", package_name)
 plugin_path.write_text(plugin)
 
-# Capacitor's default MainActivity may not declare onCreate at all.
-# Ensure Bundle is imported before injecting/creating that method.
+# Capacitor's generated MainActivity normally extends BridgeActivity. Register the
+# custom plugin through its bridge, after the Activity has been created.
 if "import android.os.Bundle;" not in source:
-    source = re.sub(
-        r"(^package [^;]+;\s*)",
-        r"\1\nimport android.os.Bundle;\n",
-        source,
-        count=1,
-        flags=re.M,
-    )
+    source = re.sub(r"(^package [^;]+;\s*)", r"\1\nimport android.os.Bundle;\n", source, count=1, flags=re.M)
+
+if "import com.getcapacitor.Bridge;" not in source:
+    source = re.sub(r"(^import com\.getcapacitor\.BridgeActivity;\s*$)", r"\1\nimport com.getcapacitor.Bridge;", source, count=1, flags=re.M)
 
 if "registerPlugin(VoskSpeechRecognitionPlugin.class);" not in source:
+    # Do not call BridgeActivity.registerPlugin(), which is not a public API in
+    # Capacitor 7. Register directly with the Bridge after super.onCreate().
+    if "extends BridgeActivity" not in source:
+        raise SystemExit("Unexpected MainActivity base class; cannot safely register Vosk plugin")
     on_create = re.search(r"public void onCreate\(Bundle savedInstanceState\)\s*\{", source)
-    if on_create:
-        body_start = on_create.end()
-        body_end = source.find("}", body_start)
-        body = source[body_start:body_end if body_end >= 0 else len(source)]
-        if "super.onCreate(savedInstanceState);" in body:
-            source = source[:body_start] + body.replace(
-                "super.onCreate(savedInstanceState);",
-                "super.onCreate(savedInstanceState);\n        registerPlugin(VoskSpeechRecognitionPlugin.class);",
-                1,
-            ) + source[body_start + len(body):]
-        else:
-            source = source[:body_start] + "\n        super.onCreate(savedInstanceState);\n        registerPlugin(VoskSpeechRecognitionPlugin.class);\n" + source[body_start:]
-    else:
+    if not on_create:
         class_end = source.rfind("}")
-        if class_end < 0:
-            raise SystemExit("Could not find end of MainActivity class")
+        if class_end < 0: raise SystemExit("Could not find end of MainActivity class")
         method = """
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        registerPlugin(VoskSpeechRecognitionPlugin.class);
+        if (getBridge() != null) getBridge().getWebView().post(() ->
+            getBridge().getPluginManager().addPlugin(new VoskSpeechRecognitionPlugin()));
     }
 """
         source = source[:class_end] + method + source[class_end:]
+    else:
+        body_start = on_create.end()
+        body_end = source.find("}", body_start)
+        body = source[body_start:body_end if body_end >= 0 else len(source)]
+        if "super.onCreate(savedInstanceState);" not in body:
+            source = source[:body_start] + "\n        super.onCreate(savedInstanceState);\n" + source[body_start:]
+            on_create = re.search(r"public void onCreate\(Bundle savedInstanceState\)\s*\{", source)
+            body_start = on_create.end()
+            body_end = source.find("}", body_start)
+            body = source[body_start:body_end]
+        if "getPluginManager().addPlugin" not in body:
+            source = source[:body_start] + body + "\n        if (getBridge() != null) getBridge().getWebView().post(() -> getBridge().getPluginManager().addPlugin(new VoskSpeechRecognitionPlugin()));\n" + source[body_end:]
 
 main_activity.write_text(source)
 
