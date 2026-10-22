@@ -33,7 +33,7 @@ function wordNumbers(text: string): string {
   let pending:string[]=[];
   const flush=()=>{ if(pending.length){ out.push(String(parseWords(pending))); pending=[]; } };
   for (const token of tokens) {
-    if (/^\\s+$/.test(token)) { out.push(token); continue; }
+    if (/^\s+$/.test(token)) { out.push(token); continue; }
     if (isNumberWord(token)) pending.push(token); else { flush(); out.push(token); }
   }
   flush();
