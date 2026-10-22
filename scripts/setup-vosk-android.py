@@ -19,11 +19,9 @@ plugin_path = main_activity.parent / "VoskSpeechRecognitionPlugin.java"
 plugin = r'''package __PACKAGE__;
 
 import android.Manifest;
-import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
-import androidx.core.content.ContextCompat;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
@@ -31,11 +29,10 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
+import com.getcapacitor.annotation.PermissionCallback;
 import org.vosk.Model;
-import org.vosk.Recognizer;
 import org.vosk.android.SpeechService;
 import org.vosk.android.RecognitionListener;
-import org.vosk.android.StorageService;
 import org.json.JSONObject;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
