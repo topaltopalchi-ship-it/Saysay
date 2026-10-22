@@ -3,7 +3,7 @@ name: Build and Release Signed Android APK
 on:
   workflow_dispatch:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, release/bazaar ]
 
 permissions:
   contents: write
@@ -42,6 +42,9 @@ jobs:
 
       - name: Sync Capacitor
         run: npx cap sync android
+
+      - name: Install native Vosk speech recognition
+        run: python3 scripts/setup-vosk-android.py
 
       - name: Ensure JitPack repository for CafeBazaar Poolakey
         run: |
