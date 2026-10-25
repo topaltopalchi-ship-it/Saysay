@@ -88,6 +88,55 @@ export async function createMonthlyCheckout(): Promise<Subscription> {
   }
 }
 
+/**
+ * Restore an existing CafeBazaar subscription without starting a new checkout.
+ * The store inventory is queried and each matching token is verified server-side.
+ */
+export async function restoreMonthlySubscription(): Promise<Subscription> {
+  await requireSignedInUser();
+  if (Capacitor.getPlatform() !== "android") {
+    throw new Error("بازیابی خرید فقط در نسخه اندروید کافه‌بازار در دسترس است.");
+  }
+
+  let connected = false;
+  try {
+    await Poolakey.connectPayment(BAZAAR_RSA_PUBLIC_KEY);
+    connected = true;
+    const result = await Poolakey.getSubscribedProducts();
+    const purchases = Array.isArray(result?.list) ? result.list : [];
+    const matching = purchases.filter((item) =>
+      item.productId === BAZAAR_PRODUCT_ID &&
+      item.purchaseState === 0 &&
+      typeof item.purchaseToken === "string" &&
+      item.purchaseToken.trim().length >= 8
+    );
+    if (!matching.length) {
+      throw new Error("خرید فعالی برای این محصول در حساب کافه‌بازار پیدا نشد. با همان حساب کافه‌بازاری وارد شوید که خرید را انجام داده است.");
+    }
+
+    let lastError: unknown;
+    for (const purchase of matching) {
+      try {
+        return await verifyStorePurchase({
+          provider: "bazaar",
+          productId: purchase.productId,
+          purchaseToken: purchase.purchaseToken,
+        });
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    throw lastError instanceof Error ? lastError : new Error("بازیابی خرید و تأیید سرور ناموفق بود.");
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error("بازیابی خرید از کافه‌بازار ناموفق بود.");
+  } finally {
+    if (connected) {
+      try { await Poolakey.disconnectPayment(); } catch { /* Preserve restore result. */ }
+    }
+  }
+}
+
 /** Send the native Bazaar purchase token to the authenticated verification function. */
 export async function verifyStorePurchase(purchase: StorePurchase): Promise<Subscription> {
   await requireSignedInUser();
