@@ -14,7 +14,7 @@ import {
   addParty, addProduct, updateProduct, deleteProduct, addSale, addSettlement, addExpense, addStockAdjustment, getDashboard, getStock, updateTransaction, deleteTransaction, updateExpense, deleteExpense,
   listParties, updateParty, deleteParty, listProducts, listTransactions, listExpenses, listMovements, listOrders, listChecks, calculateHistoricalCOGS, repairDataIntegrity, getPartyBalances
 } from "./db";
-import { createMonthlyCheckout, getSubscription, type Subscription } from "./billing";
+import { createMonthlyCheckout, getSubscription, restoreMonthlySubscription, type Subscription } from "./billing";
 import { lineTotal, type Order, type Party, type Product, type Transaction, type TransactionLine } from "./domain";
 import { formatMoney, getCurrencyUnit, setCurrencyUnit, getCurrencyLabel, parseMoneyInput, moneyInputValue } from "./settings";
 import { openPurchaseModal } from "./purchase-ui";
@@ -1271,9 +1271,10 @@ function showSubscription(subscription: Subscription): void {
     : subscription.status === "expired" ? "دورهٔ رایگان یا اشتراک پایان یافته است"
     : subscription.status === "pending" ? "خرید در انتظار تأیید است" : "اشتراک فعالی وجود ندارد";
   document.querySelector("#sub-modal")?.remove();
-  document.body.insertAdjacentHTML("beforeend", `<div class="modal-backdrop" id="sub-modal"><section class="modal"><button class="modal-close" id="sub-close">×</button><span class="eyebrow">اشتراک سای‌سای</span><h2>مدیریت اشتراک</h2><div class="price-card"><div><strong>پلن ماهانه</strong><span>${statusLabel}</span></div><b>${subscription.status === "active" ? "فعال" : "غیرفعال"}</b></div><p class="muted">اعتبار تا: ${expiry}</p><p class="muted">اشتراک ${money.format(subscription.durationDays || 30)}روزه · ${money.format(subscription.priceToman || 100000)} تومان</p><p class="muted">پرداخت امن درون‌برنامه‌ای کافه‌بازار؛ اشتراک فقط پس از تأیید سرور فعال می‌شود.</p><p class="auth-error" id="sub-error" hidden></p><button class="primary-button wide" id="sub-buy">خرید / تمدید اشتراک — ${money.format(subscription.priceToman || 100000)} تومان</button></section></div>`);
+  document.body.insertAdjacentHTML("beforeend", `<div class="modal-backdrop" id="sub-modal"><section class="modal"><button class="modal-close" id="sub-close">×</button><span class="eyebrow">اشتراک سای‌سای</span><h2>مدیریت اشتراک</h2><div class="price-card"><div><strong>پلن ماهانه</strong><span>${statusLabel}</span></div><b>${subscription.status === "active" ? "فعال" : "غیرفعال"}</b></div><p class="muted">اعتبار تا: ${expiry}</p><p class="muted">اشتراک ${money.format(subscription.durationDays || 30)}روزه · ${money.format(subscription.priceToman || 100000)} تومان</p><p class="muted">پرداخت امن درون‌برنامه‌ای کافه‌بازار؛ اشتراک فقط پس از تأیید سرور فعال می‌شود.</p><p class="auth-error" id="sub-error" hidden></p><button class="primary-button wide" id="sub-buy">خرید / تمدید اشتراک — ${money.format(subscription.priceToman || 100000)} تومان</button><button class="secondary-button wide" id="sub-restore">بازیابی خرید قبلی</button></section></div>`);
   document.querySelector("#sub-close")?.addEventListener("click", () => document.querySelector("#sub-modal")?.remove());
   document.querySelector("#sub-buy")?.addEventListener("click", subscribe);
+  document.querySelector("#sub-restore")?.addEventListener("click", restoreSubscription);
 }
 
 function showSubscriptionError(message: string): void {
@@ -1298,6 +1299,30 @@ async function subscribe(): Promise<void> {
   } finally {
     const button = document.querySelector<HTMLButtonElement>("#sub-buy");
     if (button) { button.disabled = false; button.textContent = `خرید / تمدید اشتراک — ${money.format(100000)} تومان`; }
+  }
+}
+
+
+async function restoreSubscription(): Promise<void> {
+  const button = document.querySelector<HTMLButtonElement>("#sub-restore");
+  const buyButton = document.querySelector<HTMLButtonElement>("#sub-buy");
+  if (button) { button.disabled = true; button.textContent = "در حال بررسی خریدهای قبلی…"; }
+  if (buyButton) buyButton.disabled = true;
+  const error = document.querySelector<HTMLElement>("#sub-error");
+  if (error) { error.hidden = true; error.textContent = ""; }
+  try {
+    const subscription = await restoreMonthlySubscription();
+    showSubscription(subscription);
+    showToast("خرید قبلی تأیید شد؛ اشتراک شما فعال است.");
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "بازیابی خرید ناموفق بود";
+    if (error) { error.hidden = false; error.textContent = message; }
+    showToast(message);
+  } finally {
+    const restore = document.querySelector<HTMLButtonElement>("#sub-restore");
+    const buy = document.querySelector<HTMLButtonElement>("#sub-buy");
+    if (restore) { restore.disabled = false; restore.textContent = "بازیابی خرید قبلی"; }
+    if (buy) buy.disabled = false;
   }
 }
 
