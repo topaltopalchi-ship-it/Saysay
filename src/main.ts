@@ -1277,6 +1277,24 @@ function showSubscription(subscription: Subscription): void {
   document.querySelector("#sub-restore")?.addEventListener("click", restoreSubscription);
 }
 
+async function restoreSubscription(): Promise<void> {
+  const button = document.querySelector<HTMLButtonElement>("#sub-restore");
+  if (button) { button.disabled = true; button.textContent = "در حال بازیابی خرید…"; }
+  try {
+    const subscription = await restoreMonthlySubscription();
+    showSubscription(subscription);
+    showToast("خرید قبلی تأیید شد؛ اشتراک شما فعال است.");
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "بازیابی خرید ناموفق بود.";
+    const error = document.querySelector<HTMLElement>("#sub-error");
+    if (error) { error.hidden = false; error.textContent = message; }
+    showToast(message);
+  } finally {
+    const currentButton = document.querySelector<HTMLButtonElement>("#sub-restore");
+    if (currentButton) { currentButton.disabled = false; currentButton.textContent = "بازیابی خرید قبلی"; }
+  }
+}
+
 function showSubscriptionError(message: string): void {
   showSubscription({ status: "none", plan: "none", expiresAt: null });
   const error = document.querySelector<HTMLElement>("#sub-error");
@@ -1299,30 +1317,6 @@ async function subscribe(): Promise<void> {
   } finally {
     const button = document.querySelector<HTMLButtonElement>("#sub-buy");
     if (button) { button.disabled = false; button.textContent = `خرید / تمدید اشتراک — ${money.format(100000)} تومان`; }
-  }
-}
-
-
-async function restoreSubscription(): Promise<void> {
-  const button = document.querySelector<HTMLButtonElement>("#sub-restore");
-  const buyButton = document.querySelector<HTMLButtonElement>("#sub-buy");
-  if (button) { button.disabled = true; button.textContent = "در حال بررسی خریدهای قبلی…"; }
-  if (buyButton) buyButton.disabled = true;
-  const error = document.querySelector<HTMLElement>("#sub-error");
-  if (error) { error.hidden = true; error.textContent = ""; }
-  try {
-    const subscription = await restoreMonthlySubscription();
-    showSubscription(subscription);
-    showToast("خرید قبلی تأیید شد؛ اشتراک شما فعال است.");
-  } catch (e) {
-    const message = e instanceof Error ? e.message : "بازیابی خرید ناموفق بود";
-    if (error) { error.hidden = false; error.textContent = message; }
-    showToast(message);
-  } finally {
-    const restore = document.querySelector<HTMLButtonElement>("#sub-restore");
-    const buy = document.querySelector<HTMLButtonElement>("#sub-buy");
-    if (restore) { restore.disabled = false; restore.textContent = "بازیابی خرید قبلی"; }
-    if (buy) buy.disabled = false;
   }
 }
 
