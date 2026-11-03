@@ -1,6 +1,6 @@
 import "./style.css";
 import "./ui-entrypoints";
-import { getAppLanguage, setAppLanguage, navLabel } from "./i18n";
+import { getAppLanguage, setAppLanguage, navLabel, translateRenderedUi } from "./i18n";
 import { scanBarcode } from "./barcode-scanner";
 import { authScreen, signOut, welcomeScreen } from "./auth";
 import { Capacitor } from "@capacitor/core";
@@ -1619,6 +1619,7 @@ async function render(): Promise<void> {
   await bindActions();
   if (subscription.status !== "active") {
     layout(paywall(subscription), subscription);
+    translateRenderedUi(document);
     document.querySelectorAll<HTMLButtonElement>("[data-subscribe]").forEach(b => b.addEventListener("click", subscribe));
     return;
   }
@@ -1640,6 +1641,7 @@ async function render(): Promise<void> {
   else if (activeTab === "more") content = await accountsView();
   else if (activeTab === "checks") content = await checksView();
   layout(content, subscription);
+  translateRenderedUi(document);
   bindVoiceAssistant(async (draft: VoiceSaleDraft) => {
     await openSaleModal();
     const modal = document.querySelector<HTMLDivElement>("#sale-modal");
