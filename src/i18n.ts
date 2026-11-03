@@ -371,6 +371,7 @@ const phrases: Record<string, string> = {
   "بدون شرح": "No description",
   "مانده حساب": "Account balance",
   "مشتری و تأمین‌کننده": "Customer and supplier",
+  "مدیر فروش": "Sales manager",
 };
 
 export function translateRenderedUi(root: ParentNode = document): void {
