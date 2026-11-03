@@ -384,6 +384,9 @@ const phrases: Record<string, string> = {
   "بدون اینترنت؛ بر پایه اطلاعات ذخیره‌شده در همین برنامه.": "Offline; based on data stored in this app.",
   "پیام": "Message",
   "در حال بررسی اطلاعات برنامه…": "Checking app data…",
+  "فروش ۳۰ روز اخیر": "Sales over the last 30 days",
+  "مقدار را وارد کنید": "Enter quantity",
+  "ذخیره سفارش": "Save order",
 };
 
 export function translateRenderedUi(root: ParentNode = document): void {
