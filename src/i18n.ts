@@ -66,7 +66,7 @@ const phrases: Record<string, string> = {
   "ثبت نشده": "Not set", "بدون یادداشت": "No note", "مبلغ تقریبی": "Approximate amount", "تحویل و ثبت فروش": "Deliver and record sale", "فاکتور فروش ثبت شد": "Sales invoice recorded", "هنوز سفارشی ثبت نشده است.": "No orders yet.",
   "بازه گزارش": "Report range", "انتخاب بازه": "Select range", "بازه فعال:": "Active range:", "امروز": "Today", "۷ روز": "7 days", "۷ روز اخیر": "Last 7 days", "ماه جاری": "Current month", "بازه انتخابی": "Selected range",
   "بهای تمام‌شده": "Cost of goods sold", "سود ناخالص": "Gross profit", "سود خالص": "Net profit", "خالص جریان نقدی": "Net cash flow", "تعداد فروش": "Number of sales",
-  "هزینه": "Expense", "خرید": "Purchase", "فروش": "Sale", "خرید و فروش": "Purchases and sales", "گزارش سود و زیان سای‌سای": "SaySay profit and loss report"
+  "هزینه": "Expense", "خرید": "Purchase", "فروش": "Sale", "خرید و فروش": "Purchases and sales", "گزارش سود و زیان سای‌سای": "SaySay profit and loss report",
   "داشبورد": "Dashboard", "هوش مالی سای‌سای": "SaySay Financial Intelligence", "حساب متصل:": "Connected account:",
   "از حساب خارج شدید": "You have signed out", "از حساب خارج شوید": "Sign out", "حساب متصل": "Connected account",
   "نمایش گزارش‌ها و ابزارهای مدیریتی؛ این گزینه به‌تنهایی اشتراک پولی را فعال نمی‌کند.": "Show reports and management tools; this option alone does not activate a paid subscription.",
