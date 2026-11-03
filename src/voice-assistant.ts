@@ -2,6 +2,7 @@ import { SpeechRecognition } from "@capacitor-community/speech-recognition";
 import { Capacitor } from "@capacitor/core";
 import { TextToSpeech } from "@capacitor-community/text-to-speech";
 import { getAppLanguage } from "./i18n";
+import { listenWithVoskEnglish } from "./vosk-english";
 
 async function prepareSpeechRecognition(): Promise<void> {
   try {
@@ -144,25 +145,29 @@ export function bindVoiceProductFieldAssistant(
       const shouldContinue = await beforeListen();
       if (!shouldContinue) return;
     }
-    const available = await SpeechRecognition.available().catch(() => ({ available: false }));
-    if (!available.available) { notify("تشخیص صدا در این دستگاه در دسترس نیست"); return; }
-    const permission = await SpeechRecognition.requestPermissions().catch(() => null);
-    if (permission && permission.speechRecognition !== "granted") {
-      notify("اجازه دسترسی به میکروفون و تشخیص صدا لازم است");
-      return;
+    if (getAppLanguage() !== "en") {
+      const available = await SpeechRecognition.available().catch(() => ({ available: false }));
+      if (!available.available) { notify("تشخیص صدا در این دستگاه در دسترس نیست"); return; }
+      const permission = await SpeechRecognition.requestPermissions().catch(() => null);
+      if (permission && permission.speechRecognition !== "granted") {
+        notify("اجازه دسترسی به میکروفون و تشخیص صدا لازم است");
+        return;
+      }
     }
     button.disabled = true;
     button.textContent = "🎙 در حال شنیدن…";
     try {
-      await prepareSpeechRecognition();
-      const result = await SpeechRecognition.start({
-        language: getAppLanguage() === "en" ? "en-US" : "fa-IR",
-        maxResults: 5,
-        partialResults: false,
-        popup: false,
-        prompt: getAppLanguage() === "en" ? "Clearly say the product name, SKU, stock, purchase price and sale price" : "نام کالا، کد، موجودی، قیمت خرید و فروش را واضح و نزدیک میکروفون بگویید",
-      });
-      const transcript = result.matches?.[0]?.trim() || "";
+      let transcript = "";
+      if (getAppLanguage() === "en") {
+        transcript = await listenWithVoskEnglish(notify);
+      } else {
+        await prepareSpeechRecognition();
+        const result = await SpeechRecognition.start({
+          language: "fa-IR", maxResults: 5, partialResults: false, popup: false,
+          prompt: "نام کالا، کد، موجودی، قیمت خرید و فروش را واضح و نزدیک میکروفون بگویید",
+        });
+        transcript = result.matches?.[0]?.trim() || "";
+      }
       if (!transcript) throw new Error("اطلاعات صوتی کالا تشخیص داده نشد");
       await onDraft(parseVoiceProduct(transcript));
       speakSaiSai("اطلاعات صوتی کالا اضافه شد. قبل از ثبت بررسی کنید.");
