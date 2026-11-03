@@ -186,15 +186,22 @@ export function bindVoiceProductAssistant(onConfirm: (draft: VoiceProductDraft) 
   const button = document.querySelector<HTMLButtonElement>("#voice-product");
   if (!button) return;
   button.addEventListener("click", async () => {
-    const available = await SpeechRecognition.available().catch(() => ({ available:false }));
-    if (!available.available) { notify("تشخیص صدا در این دستگاه در دسترس نیست"); return; }
-    const permission = await SpeechRecognition.requestPermissions().catch(() => null);
-    if (permission && permission.speechRecognition !== "granted") { notify("اجازه دسترسی به میکروفون و تشخیص صدا لازم است"); return; }
-    button.disabled=true; button.textContent="🎙 در حال شنیدن…";
+    if (getAppLanguage() !== "en") {
+      const available = await SpeechRecognition.available().catch(() => ({ available:false }));
+      if (!available.available) { notify("تشخیص صدا در این دستگاه در دسترس نیست"); return; }
+      const permission = await SpeechRecognition.requestPermissions().catch(() => null);
+      if (permission && permission.speechRecognition !== "granted") { notify("اجازه دسترسی به میکروفون و تشخیص صدا لازم است"); return; }
+    }
+    button.disabled=true; button.textContent=getAppLanguage() === "en" ? "🎙 Listening…" : "🎙 در حال شنیدن…";
     try {
-      await prepareSpeechRecognition();
-      const result=await SpeechRecognition.start({ language:"fa-IR", maxResults:5, partialResults: false, popup: false, prompt:getAppLanguage() === "en" ? "Clearly say the product name, stock and prices" : "نام کالا، موجودی و قیمت‌ها را واضح و نزدیک میکروفون بگویید" });
-      const transcript=result.matches?.[0]?.trim() || "";
+      let transcript = "";
+      if (getAppLanguage() === "en") {
+        transcript = await listenWithVoskEnglish(message => { notify(message); button.textContent = message; });
+      } else {
+        await prepareSpeechRecognition();
+        const result=await SpeechRecognition.start({ language:"fa-IR", maxResults:5, partialResults: false, popup: false, prompt:"نام کالا، موجودی و قیمت‌ها را واضح و نزدیک میکروفون بگویید" });
+        transcript=result.matches?.[0]?.trim() || "";
+      }
       if (!transcript) throw new Error("مشخصات کالا تشخیص داده نشد");
       const drafts=parseVoiceProducts(transcript);
       const draft=drafts[0];
