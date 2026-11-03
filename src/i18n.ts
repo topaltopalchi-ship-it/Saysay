@@ -53,7 +53,20 @@ const phrases: Record<string, string> = {
   "جستجو": "Search", "فیلتر": "Filter", "همه": "All", "پرداخت": "Payment", "دریافت": "Receipt",
   "افزودن": "Add", "ثبت": "Create", "شماره": "Number", "نام کالا": "Product name",
   "نام شخص": "Person name", "موجودی فعلی": "Current stock", "واحد": "Unit",
-  "بازگشت": "Back", "ادامه": "Continue", "تأیید": "Confirm", "لغو": "Cancel"
+  "بازگشت": "Back", "ادامه": "Continue", "تأیید": "Confirm", "لغو": "Cancel",
+  "انبار": "Warehouse", "موجودی کالا": "Product inventory", "موجودی واقعی از روی گردش انبار محاسبه می‌شود؛ «حداقل موجودی» فقط آستانه هشدار است.": "Actual stock is calculated from warehouse movements; minimum stock is only an alert threshold.",
+  "هنوز کالایی ثبت نشده است.": "No products have been added yet.", "کنترل انبار": "Inventory control", "اصلاح موجودی": "Adjust inventory", "مقدار تغییر": "Change quantity",
+  "مثبت برای افزایش، منفی برای کاهش": "Positive to increase, negative to decrease", "شرح": "Description", "ثبت اصلاح موجودی": "Save inventory adjustment",
+  "قیمت هوشمند": "Smart pricing", "مشتریان و تأمین‌کنندگان": "Customers and suppliers", "لیست بدهکاران": "Debtors list",
+  "فقط فاکتورهای فروش تسویه‌نشده": "Only unsettled sales invoices", "هیچ فاکتور تسویه‌نشده‌ای وجود ندارد.": "No unsettled invoices.",
+  "هنوز شخصی ثبت نشده است.": "No people have been added yet.", "مشتری و تأمین‌کننده": "Customer and supplier", "بدون شماره": "No phone number",
+  "سفارشات": "Orders", "دریافت و پیگیری سفارش‌ها": "Order intake and tracking", "نام مشتری، کالا، تاریخ تحویل و یادآوری یک روز قبل.": "Customer, product, delivery date, and one-day reminder.",
+  "سفارش جدید": "New order", "در انتظار تحویل": "Awaiting delivery", "تحویل شد": "Delivered", "لغو شد": "Cancelled", "در انتظار": "Pending",
+  "سفارش‌دهنده:": "Ordered by:", "مقدار:": "Quantity:", "کالا:": "Product:", "تاریخ سفارش:": "Order date:", "تاریخ تحویل:": "Delivery date:", "زمان تحویل:": "Delivery time:",
+  "ثبت نشده": "Not set", "بدون یادداشت": "No note", "مبلغ تقریبی": "Approximate amount", "تحویل و ثبت فروش": "Deliver and record sale", "فاکتور فروش ثبت شد": "Sales invoice recorded", "هنوز سفارشی ثبت نشده است.": "No orders yet.",
+  "بازه گزارش": "Report range", "انتخاب بازه": "Select range", "بازه فعال:": "Active range:", "امروز": "Today", "۷ روز": "7 days", "۷ روز اخیر": "Last 7 days", "ماه جاری": "Current month", "بازه انتخابی": "Selected range",
+  "بهای تمام‌شده": "Cost of goods sold", "سود ناخالص": "Gross profit", "سود خالص": "Net profit", "خالص جریان نقدی": "Net cash flow", "تعداد فروش": "Number of sales",
+  "هزینه": "Expense", "خرید": "Purchase", "فروش": "Sale", "خرید و فروش": "Purchases and sales", "گزارش سود و زیان سای‌سای": "SaySay profit and loss report"
 };
 
 export function translateRenderedUi(root: ParentNode = document): void {
