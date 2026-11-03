@@ -1,6 +1,7 @@
 import { SpeechRecognition } from "@capacitor-community/speech-recognition";
 import { Capacitor } from "@capacitor/core";
 import { TextToSpeech } from "@capacitor-community/text-to-speech";
+import { getAppLanguage } from "./i18n";
 
 async function prepareSpeechRecognition(): Promise<void> {
   try {
@@ -155,11 +156,11 @@ export function bindVoiceProductFieldAssistant(
     try {
       await prepareSpeechRecognition();
       const result = await SpeechRecognition.start({
-        language: "fa-IR",
+        language: getAppLanguage() === "en" ? "en-US" : "fa-IR",
         maxResults: 5,
         partialResults: false,
         popup: false,
-        prompt: "نام کالا، کد، موجودی، قیمت خرید و فروش را واضح و نزدیک میکروفون بگویید",
+        prompt: getAppLanguage() === "en" ? "Clearly say the product name, SKU, stock, purchase price and sale price" : "نام کالا، کد، موجودی، قیمت خرید و فروش را واضح و نزدیک میکروفون بگویید",
       });
       const transcript = result.matches?.[0]?.trim() || "";
       if (!transcript) throw new Error("اطلاعات صوتی کالا تشخیص داده نشد");
@@ -187,7 +188,7 @@ export function bindVoiceProductAssistant(onConfirm: (draft: VoiceProductDraft) 
     button.disabled=true; button.textContent="🎙 در حال شنیدن…";
     try {
       await prepareSpeechRecognition();
-      const result=await SpeechRecognition.start({ language:"fa-IR", maxResults:5, partialResults: false, popup: false, prompt:"نام کالا، موجودی و قیمت‌ها را واضح و نزدیک میکروفون بگویید" });
+      const result=await SpeechRecognition.start({ language:"fa-IR", maxResults:5, partialResults: false, popup: false, prompt:getAppLanguage() === "en" ? "Clearly say the product name, stock and prices" : "نام کالا، موجودی و قیمت‌ها را واضح و نزدیک میکروفون بگویید" });
       const transcript=result.matches?.[0]?.trim() || "";
       if (!transcript) throw new Error("مشخصات کالا تشخیص داده نشد");
       const drafts=parseVoiceProducts(transcript);
