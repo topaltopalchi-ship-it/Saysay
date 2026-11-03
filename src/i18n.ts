@@ -244,7 +244,7 @@ const phrases: Record<string, string> = {
   "جنس بعدی، تعداد و قیمت واحد را بگویید؛ برای پایان بگویید تمام": "Say the next item, quantity, and unit price; say 'done' to finish",
   "صدایتان تشخیص داده نشد. نزدیک میکروفون و در محیط آرام دوباره بگویید.": "Speech was not recognized. Try again near the microphone in a quiet place.",
   "دوباره گوش می‌دهم؛ واضح‌تر و کمی بلندتر صحبت کنید": "Listening again; speak more clearly and a little louder",
-  "درباره موجودی و فروش بپرسید": "Ask about inventory and sales",
+  
   "پاسخ متنی آماده است؛ برای پاسخ صوتی، موتور گفتار فارسی گوشی را فعال کنید.": "Text answer is ready. Enable your phone's Persian speech engine for audio.",
   "سرویس تشخیص گفتار فارسی گوشی را فعال کنید": "Enable your phone's Persian speech recognition service",
   "ورود گروهی": "Bulk entry",
