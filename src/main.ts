@@ -34,7 +34,7 @@ const navItems: Array<[Tab, string, string]> = [
   ["dashboard", "داشبورد", "⌂"], ["sales", "فروش", "↗"], ["purchases", "خرید", "↙"],
   ["orders", "سفارشات", "▣"], ["inventory", "موجودی", "▤"], ["people", "اشخاص", "♙"], ["reports", "گزارش‌ها", "◫"], ["more", "خزانه", "▣"], ["checks", "چک‌ها", "✓"],
 ];
-const money = new Intl.NumberFormat("fa-IR");
+const money = { format(value: number): string { return new Intl.NumberFormat(getAppLanguage() === "en" ? "en-US" : "fa-IR").format(value); } };
 
 function numericValue(value: string | number | undefined | null): number {
   const normalized = String(value ?? "")
@@ -56,9 +56,9 @@ function signedNumericValue(value: string | number | undefined | null): number {
   const n = Number(normalized);
   return Number.isFinite(n) ? n : 0;
 }
-const dateTime = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
+const dateTime = { format(value: Date): string { return new Intl.DateTimeFormat(getAppLanguage() === "en" ? "en-US" : "fa-IR-u-ca-persian", {
   year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit"
-});
+}).format(value); } };
 let activeTab: Tab = "dashboard";
 const UI_MODE_KEY = "sai-sai-ui-mode";
 function isProfessionalMode(): boolean { return localStorage.getItem(UI_MODE_KEY) === "professional"; }
