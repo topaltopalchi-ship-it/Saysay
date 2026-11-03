@@ -27,13 +27,13 @@ export async function listenWithVoskEnglish(
   }
 
   const model = await getModel(onStatus);
-  const recognizer = new model.KaldiRecognizer();
   const stream = await navigator.mediaDevices.getUserMedia({
     audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 },
     video: false,
   });
   const audioContext = new AudioContext();
   const source = audioContext.createMediaStreamSource(stream);
+  const recognizer = new model.KaldiRecognizer(audioContext.sampleRate);
   const processor = audioContext.createScriptProcessor(4096, 1, 1);
   let transcript = "";
   let quietTimer: ReturnType<typeof setTimeout> | undefined;
@@ -65,19 +65,19 @@ export async function listenWithVoskEnglish(
     };
 
     recognizer.on("result", message => {
-      const text = message.result.text?.trim();
+      const text = (message as { result: { text: string } }).result.text?.trim();
       if (text) transcript = text;
       if (transcript) finish(transcript);
     });
     recognizer.on("partialresult", message => {
-      const partial = message.result.partial?.trim();
+      const partial = (message as { result: { partial: string } }).result.partial?.trim();
       if (partial) {
         transcript = partial;
         if (quietTimer) clearTimeout(quietTimer);
         quietTimer = setTimeout(() => finish(transcript), 1800);
       }
     });
-    recognizer.on("error", message => fail(new Error(message.error || "Vosk recognition error")));
+    recognizer.on("error", message => fail(new Error((message as { error: string }).error || "Vosk recognition error")));
 
     processor.onaudioprocess = event => {
       try {
