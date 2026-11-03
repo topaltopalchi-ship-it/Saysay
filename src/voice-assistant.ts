@@ -111,13 +111,13 @@ function spokenMoney(text: string): number {
 
 export function parseVoiceProduct(transcript: string): VoiceProductDraft {
   const text = transcript.trim();
-  const nameMatch = text.match(/(?:کالا(?:ی)?|جنس|product|item)\s+(.+?)(?=\s+(?:کد|شماره|موجودی|تعداد|قیمت|خرید|فروش|واحد|حداقل)|[،,.]|$)/i);
+  const nameMatch = text.match(/(?:کالا(?:ی)?|جنس|product|item)\s+(.+?)(?=\s+(?:کد|شماره|موجودی|تعداد|قیمت|خرید|فروش|واحد|حداقل|sku|code|stock|quantity|purchase|cost|sale|unit)|[،,.]|$)/i);
   const name = (nameMatch?.[1] || text.split(/[،,.]/)[0] || "").replace(/^(یک|یه|این|اون)\s+/i, "").trim();
   const sku = text.match(/(?:کد|شماره(?:\s+کالا)?|sku|code)\s*([A-Za-z0-9۰-۹_-]+)/i)?.[1] || "";
-  const stockText = text.match(/(?:موجودی|تعداد|stock|quantity)\s*(?:اولیه|initial)?\s*(?:[=:]\s*)?([^،,.]+?)(?=\s+(?:عدد|تا|قیمت|کد|واحد|حداقل)|[،,.]|$)/i)?.[1] || "";
+  const stockText = text.match(/(?:موجودی|تعداد|stock|quantity)\s*(?:اولیه|initial)?\s*(?:[=:]\s*)?([^،,.]+?)(?=\s+(?:عدد|تا|قیمت|کد|واحد|حداقل|purchase|cost|sale|price|sku|code|unit)|[،,.]|$)/i)?.[1] || "";
   const initialStock = firstNumber(stockText) || 0;
-  const buyText = text.match(/(?:قیمت\s*خرید|خرید|purchase\s*price|cost)\s*(?:[=:]\s*)?([^،,.]+?)(?=\s+(?:قیمت\s*فروش|فروش|موجودی|کد|واحد|حداقل)|[،,.]|$)/i)?.[1] || "";
-  const saleText = text.match(/(?:قیمت\s*فروش|فروش|sale\s*price)\s*(?:[=:]\s*)?([^،,.]+?)(?=\s+(?:قیمت\s*خرید|خرید|موجودی|کد|واحد|حداقل)|[،,.]|$)/i)?.[1] || "";
+  const buyText = text.match(/(?:قیمت\s*خرید|خرید|purchase\s*price|cost)\s*(?:[=:]\s*)?([^،,.]+?)(?=\s+(?:قیمت\s*فروش|فروش|موجودی|کد|واحد|حداقل|sale\s*price|sale|stock|quantity|sku|code|unit)|[،,.]|$)/i)?.[1] || "";
+  const saleText = text.match(/(?:قیمت\s*فروش|فروش|sale\s*price)\s*(?:[=:]\s*)?([^،,.]+?)(?=\s+(?:قیمت\s*خرید|خرید|موجودی|کد|واحد|حداقل|purchase\s*price|purchase|cost|stock|quantity|sku|code|unit)|[،,.]|$)/i)?.[1] || "";
   const purchasePrice = spokenMoney(buyText);
   const salePrice = spokenMoney(saleText);
   const unitText = text.match(/(?:واحد|unit)\s*(?:[=:]\s*)?(عدد|کیلو(?:گرم)?|گرم|لیتر|متر|بسته|each|kg|g|liter|meter|package)/i)?.[1] || "عدد";
