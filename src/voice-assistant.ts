@@ -121,7 +121,7 @@ export function parseVoiceProduct(transcript: string): VoiceProductDraft {
   const purchasePrice = spokenMoney(buyText);
   const salePrice = spokenMoney(saleText);
   const unitText = text.match(/(?:واحد)\s*(?:[=:]\s*)?(عدد|کیلو(?:گرم)?|گرم|لیتر|متر|بسته)/i)?.[1] || "عدد";
-  const unit = unitText === "کیلو" || unitText === "کیلوگرم" ? "کیلوگرم" : unitText as VoiceProductDraft["unit"];
+  const unit = unitText === "کیلو" || unitText === "کیلوگرم" || unitText.toLowerCase() === "kg" ? "کیلوگرم" : ({ each: "عدد", g: "گرم", liter: "لیتر", meter: "متر", package: "بسته" } as Record<string, VoiceProductDraft["unit"]>)[unitText.toLowerCase()] ?? unitText as VoiceProductDraft["unit"];
   const lowText = text.match(/(?:حداقل\s+موجودی|هشدار\s+موجودی)\s*(?:[=:]\s*)?([^،,.]+?)(?=\s+(?:عدد|تا)|[،,.]|$)/i)?.[1] || "";
   const lowStock = firstNumber(lowText) || 0;
   return { transcript:text, name, sku, unit, purchasePrice, salePrice, initialStock, lowStock };
