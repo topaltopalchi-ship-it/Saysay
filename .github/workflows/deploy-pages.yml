@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/bilingual-fa-en
+      - feature/vosk-en-web
   workflow_dispatch:
 
 permissions:
@@ -27,6 +28,8 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install
+      - name: Prepare Vosk English model
+        run: bash scripts/prepare-vosk-model.sh
       - name: Build web app for GitHub Pages
         run: npm run build
         env:
