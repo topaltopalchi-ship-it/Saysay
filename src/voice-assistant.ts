@@ -1,6 +1,7 @@
 import { SpeechRecognition } from "@capacitor-community/speech-recognition";
 import { Capacitor } from "@capacitor/core";
 import { TextToSpeech } from "@capacitor-community/text-to-speech";
+import { getAppLanguage } from "./i18n";
 
 async function prepareSpeechRecognition(): Promise<void> {
   try {
@@ -110,17 +111,17 @@ function spokenMoney(text: string): number {
 
 export function parseVoiceProduct(transcript: string): VoiceProductDraft {
   const text = transcript.trim();
-  const nameMatch = text.match(/(?:کالا(?:ی)?|جنس)\s+(.+?)(?=\s+(?:کد|شماره|موجودی|تعداد|قیمت|خرید|فروش|واحد|حداقل)|[،,.]|$)/i);
+  const nameMatch = text.match(/(?:کالا(?:ی)?|جنس|product|item)\s+(.+?)(?=\s+(?:کد|شماره|موجودی|تعداد|قیمت|خرید|فروش|واحد|حداقل|sku|code|stock|quantity|purchase|cost|sale|unit)|[،,.]|$)/i);
   const name = (nameMatch?.[1] || text.split(/[،,.]/)[0] || "").replace(/^(یک|یه|این|اون)\s+/i, "").trim();
-  const sku = text.match(/(?:کد|شماره(?:\s+کالا)?)\s*([A-Za-z0-9۰-۹_-]+)/i)?.[1] || "";
-  const stockText = text.match(/(?:موجودی|تعداد)\s*(?:اولیه)?\s*(?:[=:]\s*)?([^،,.]+?)(?=\s+(?:عدد|تا|قیمت|کد|واحد|حداقل)|[،,.]|$)/i)?.[1] || "";
+  const sku = text.match(/(?:کد|شماره(?:\s+کالا)?|sku|code)\s*([A-Za-z0-9۰-۹_-]+)/i)?.[1] || "";
+  const stockText = text.match(/(?:موجودی|تعداد|stock|quantity)\s*(?:اولیه|initial)?\s*(?:[=:]\s*)?([^،,.]+?)(?=\s+(?:عدد|تا|قیمت|کد|واحد|حداقل|purchase|cost|sale|price|sku|code|unit)|[،,.]|$)/i)?.[1] || "";
   const initialStock = firstNumber(stockText) || 0;
-  const buyText = text.match(/(?:قیمت\s*خرید|خرید)\s*(?:[=:]\s*)?([^،,.]+?)(?=\s+(?:قیمت\s*فروش|فروش|موجودی|کد|واحد|حداقل)|[،,.]|$)/i)?.[1] || "";
-  const saleText = text.match(/(?:قیمت\s*فروش|فروش)\s*(?:[=:]\s*)?([^،,.]+?)(?=\s+(?:قیمت\s*خرید|خرید|موجودی|کد|واحد|حداقل)|[،,.]|$)/i)?.[1] || "";
+  const buyText = text.match(/(?:قیمت\s*خرید|خرید|purchase\s*price|cost)\s*(?:[=:]\s*)?([^،,.]+?)(?=\s+(?:قیمت\s*فروش|فروش|موجودی|کد|واحد|حداقل|sale\s*price|sale|stock|quantity|sku|code|unit)|[،,.]|$)/i)?.[1] || "";
+  const saleText = text.match(/(?:قیمت\s*فروش|فروش|sale\s*price)\s*(?:[=:]\s*)?([^،,.]+?)(?=\s+(?:قیمت\s*خرید|خرید|موجودی|کد|واحد|حداقل|purchase\s*price|purchase|cost|stock|quantity|sku|code|unit)|[،,.]|$)/i)?.[1] || "";
   const purchasePrice = spokenMoney(buyText);
   const salePrice = spokenMoney(saleText);
-  const unitText = text.match(/(?:واحد)\s*(?:[=:]\s*)?(عدد|کیلو(?:گرم)?|گرم|لیتر|متر|بسته)/i)?.[1] || "عدد";
-  const unit = unitText === "کیلو" || unitText === "کیلوگرم" ? "کیلوگرم" : unitText as VoiceProductDraft["unit"];
+  const unitText = text.match(/(?:واحد|unit)\s*(?:[=:]\s*)?(عدد|کیلو(?:گرم)?|گرم|لیتر|متر|بسته|each|kg|g|liter|meter|package)/i)?.[1] || "عدد";
+  const unit = unitText === "کیلو" || unitText === "کیلوگرم" || unitText.toLowerCase() === "kg" ? "کیلوگرم" : ({ each: "عدد", g: "گرم", liter: "لیتر", meter: "متر", package: "بسته" } as Record<string, VoiceProductDraft["unit"]>)[unitText.toLowerCase()] ?? unitText as VoiceProductDraft["unit"];
   const lowText = text.match(/(?:حداقل\s+موجودی|هشدار\s+موجودی)\s*(?:[=:]\s*)?([^،,.]+?)(?=\s+(?:عدد|تا)|[،,.]|$)/i)?.[1] || "";
   const lowStock = firstNumber(lowText) || 0;
   return { transcript:text, name, sku, unit, purchasePrice, salePrice, initialStock, lowStock };
@@ -155,11 +156,11 @@ export function bindVoiceProductFieldAssistant(
     try {
       await prepareSpeechRecognition();
       const result = await SpeechRecognition.start({
-        language: "fa-IR",
+        language: getAppLanguage() === "en" ? "en-US" : "fa-IR",
         maxResults: 5,
         partialResults: false,
         popup: false,
-        prompt: "نام کالا، کد، موجودی، قیمت خرید و فروش را واضح و نزدیک میکروفون بگویید",
+        prompt: getAppLanguage() === "en" ? "Clearly say the product name, SKU, stock, purchase price and sale price" : "نام کالا، کد، موجودی، قیمت خرید و فروش را واضح و نزدیک میکروفون بگویید",
       });
       const transcript = result.matches?.[0]?.trim() || "";
       if (!transcript) throw new Error("اطلاعات صوتی کالا تشخیص داده نشد");
@@ -187,7 +188,7 @@ export function bindVoiceProductAssistant(onConfirm: (draft: VoiceProductDraft) 
     button.disabled=true; button.textContent="🎙 در حال شنیدن…";
     try {
       await prepareSpeechRecognition();
-      const result=await SpeechRecognition.start({ language:"fa-IR", maxResults:5, partialResults: false, popup: false, prompt:"نام کالا، موجودی و قیمت‌ها را واضح و نزدیک میکروفون بگویید" });
+      const result=await SpeechRecognition.start({ language:"fa-IR", maxResults:5, partialResults: false, popup: false, prompt:getAppLanguage() === "en" ? "Clearly say the product name, stock and prices" : "نام کالا، موجودی و قیمت‌ها را واضح و نزدیک میکروفون بگویید" });
       const transcript=result.matches?.[0]?.trim() || "";
       if (!transcript) throw new Error("مشخصات کالا تشخیص داده نشد");
       const drafts=parseVoiceProducts(transcript);

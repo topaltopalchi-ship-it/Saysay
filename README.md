@@ -53,3 +53,45 @@
 - شناسه محصول باید در پنل توسعه‌دهنده کافه‌بازار دقیقاً با `Saysay110` یکسان باشد و به‌عنوان اشتراک تنظیم شده باشد.
 
 خرید واقعی فقط پس از ثبت کلید عمومی کافه‌بازار در تنظیمات ساخت و تنظیم Secret سمت سرور قابل آزمایش است. هیچ پرداختی در وب شبیه‌سازی نمی‌شود.
+
+
+---
+
+## English overview
+
+**SAI SAI (SaySay)** is a mobile-first bookkeeping, sales, and inventory application designed around the workflows and conventions of Iranian small businesses.
+
+### Product capabilities
+
+- Sales and purchase invoices with customer/supplier records
+- Inventory tracking based on recorded stock movements
+- Orders, receipts, payments, expenses, accounts, and checks
+- Financial reports and smart pricing tools
+- Backup and restore workflows
+- Persian-first RTL interface with an English (LTR) language option
+- Persian calendar and localized number/date formatting in Persian; Gregorian/English formatting in English
+- Voice-assisted product and sales entry with language-aware speech recognition settings
+- PWA and Capacitor Android packaging
+
+### Technology
+
+TypeScript, Vite, Capacitor, Supabase, and IndexedDB-oriented local data workflows.
+
+### Subscription integrity
+
+Subscription activation is server-verified. The Cafe Bazaar Android in-app purchase path remains native and sends the purchase token to the backend for verification. The bilingual UI work is intended to preserve this flow; no payment activation is simulated in the web app.
+
+### Build
+
+```bash
+npm install
+npm run build
+`
+
+Configure the required Supabase environment and store credentials/secrets in the appropriate deployment settings. Never commit private keys or purchase verification secrets.
+
+### Localization status
+
+The `feature/bilingual-fa-en` branch introduces a Persian/English selector, dictionary-based UI phrase translation, English speech-recognition configuration and parsing keywords, and language-aware date/number formatting. Coverage is being expanded; untranslated Persian content may still appear in English mode. Run the build and verify the app on web and Android before release.
+
+---

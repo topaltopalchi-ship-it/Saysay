@@ -1,5 +1,6 @@
 import "./style.css";
 import "./ui-entrypoints";
+import { getAppLanguage, setAppLanguage, navLabel, translateRenderedUi } from "./i18n";
 import { scanBarcode } from "./barcode-scanner";
 import { authScreen, signOut, welcomeScreen } from "./auth";
 import { Capacitor } from "@capacitor/core";
@@ -33,7 +34,7 @@ const navItems: Array<[Tab, string, string]> = [
   ["dashboard", "داشبورد", "⌂"], ["sales", "فروش", "↗"], ["purchases", "خرید", "↙"],
   ["orders", "سفارشات", "▣"], ["inventory", "موجودی", "▤"], ["people", "اشخاص", "♙"], ["reports", "گزارش‌ها", "◫"], ["more", "خزانه", "▣"], ["checks", "چک‌ها", "✓"],
 ];
-const money = new Intl.NumberFormat("fa-IR");
+const money = { format(value: number): string { return new Intl.NumberFormat(getAppLanguage() === "en" ? "en-US" : "fa-IR").format(value); } };
 
 function numericValue(value: string | number | undefined | null): number {
   const normalized = String(value ?? "")
@@ -55,9 +56,9 @@ function signedNumericValue(value: string | number | undefined | null): number {
   const n = Number(normalized);
   return Number.isFinite(n) ? n : 0;
 }
-const dateTime = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
+const dateTime = { format(value: Date): string { return new Intl.DateTimeFormat(getAppLanguage() === "en" ? "en-US" : "fa-IR-u-ca-persian", {
   year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit"
-});
+}).format(value); } };
 let activeTab: Tab = "dashboard";
 const UI_MODE_KEY = "sai-sai-ui-mode";
 function isProfessionalMode(): boolean { return localStorage.getItem(UI_MODE_KEY) === "professional"; }
@@ -350,6 +351,7 @@ function layout(content: string, subscription: Subscription): void {
       <header class="topbar">
         <div class="brand-block"><img class="brand-logo" src="/icon-192.svg" alt="لوگوی سای‌سای"><div><span class="eyebrow">مدیریت مالی و فروش</span><h1>سای‌سای</h1></div></div>
         <div class="header-actions">
+          <label class="header-currency" aria-label="Language"><span>Language / زبان</span><select id="app-language"><option value="fa" ${getAppLanguage() === "fa" ? "selected" : ""}>فارسی</option><option value="en" ${getAppLanguage() === "en" ? "selected" : ""}>English</option></select></label>
           <label class="header-currency" aria-label="انتخاب واحد پول"><span>واحد پول</span><select id="header-currency-unit"><option value="toman" ${getCurrencyUnit() === "toman" ? "selected" : ""}>تومان</option><option value="rial" ${getCurrencyUnit() === "rial" ? "selected" : ""}>ریال</option></select></label>
           <span class="plan-pill ${subscription.status}">${subscription.status === "active" ? (subscription.isTrial ? "دوره رایگان ۳۰ روزه" : "اشتراک فعال") : "اشتراک لازم است"}</span>
           <button class="icon-button" id="settings" aria-label="حالت کاربری">⚙</button>
@@ -357,10 +359,12 @@ function layout(content: string, subscription: Subscription): void {
       </header>
       <div id="view">${content}</div>
       <nav class="bottom-nav" aria-label="ناوبری اصلی">
-        ${navItems.filter(([id]) => isProfessionalMode() || (id !== "reports" && id !== "more" && id !== "checks")).map(([id,label,icon]) => `<button class="nav-item ${activeTab === id ? "active" : ""}" data-nav="${id}"><span>${icon}</span><small>${label}</small></button>`).join("")}
+        ${navItems.filter(([id]) => isProfessionalMode() || (id !== "reports" && id !== "more" && id !== "checks")).map(([id,label,icon]) => `<button class="nav-item ${activeTab === id ? "active" : ""}" data-nav="${id}"><span>${icon}</span><small>${navLabel(id,label)}</small></button>`).join("")}
       </nav>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </main>`;
+  setAppLanguage(getAppLanguage());
+  document.querySelector<HTMLSelectElement>("#app-language")?.addEventListener("change", async event => { setAppLanguage((event.currentTarget as HTMLSelectElement).value === "en" ? "en" : "fa"); await render(); });
   document.querySelector<HTMLSelectElement>("#header-currency-unit")?.addEventListener("change", async event => { const unit = (event.currentTarget as HTMLSelectElement).value === "toman" ? "toman" : "rial"; setCurrencyUnit(unit); await render(); showToast("واحد پول سیستم روی " + (unit === "toman" ? "تومان" : "ریال") + " تنظیم شد"); });
   document.querySelector<HTMLButtonElement>("#settings")?.addEventListener("click", () => { document.body.insertAdjacentHTML("beforeend", settingsModal()); bindSettingsModal(); });
   document.querySelectorAll<HTMLButtonElement>("[data-subscribe]").forEach(b => b.addEventListener("click", subscribe));
@@ -1615,6 +1619,7 @@ async function render(): Promise<void> {
   await bindActions();
   if (subscription.status !== "active") {
     layout(paywall(subscription), subscription);
+    translateRenderedUi(document);
     document.querySelectorAll<HTMLButtonElement>("[data-subscribe]").forEach(b => b.addEventListener("click", subscribe));
     return;
   }
@@ -1636,6 +1641,7 @@ async function render(): Promise<void> {
   else if (activeTab === "more") content = await accountsView();
   else if (activeTab === "checks") content = await checksView();
   layout(content, subscription);
+  translateRenderedUi(document);
   bindVoiceAssistant(async (draft: VoiceSaleDraft) => {
     await openSaleModal();
     const modal = document.querySelector<HTMLDivElement>("#sale-modal");
