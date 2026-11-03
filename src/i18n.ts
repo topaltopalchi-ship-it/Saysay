@@ -355,6 +355,16 @@ const phrases: Record<string, string> = {
   "بدون شرح": "No description",
   "مانده حساب": "Account balance",
   "مدیر فروش": "Sales manager",
+  "دریافت و پرداخت": "Receipts and payments",
+  "بدهکاران": "Debtors",
+  "هزینه‌ها": "Expenses",
+  "خروجی گزارش": "Report export",
+  "خروجی Excel": "Export Excel",
+  "چاپ / PDF": "Print / PDF",
+  "ماشین حساب صوتی بگو محاسبه کن": "Voice calculator — say calculate",
+  "سای‌سای؛ مدیر فروش و هوش مصنوعی": "SaySay — Sales Manager & AI",
+  "ثبت کالای جدید": "Add new product",
+  "کالای نیازمند تأمین": "Product needing restock",
 };
 
 export function translateRenderedUi(root: ParentNode = document): void {
