@@ -108,6 +108,10 @@ const phrases: Record<string, string> = {
   "دستیار آفلاین سای‌سای": "SaySay offline assistant", "درباره موجودی و فروش بپرسید": "Ask about inventory and sales", "پاسخ با اطلاعات ذخیره‌شده روی همین دستگاه محاسبه می‌شود و برای سؤال متنی به اینترنت نیاز ندارد.": "Answers are calculated from data stored on this device. Text questions work offline.", "سؤال شما": "Your question", "مثلاً موجودی دیفوزر چقدر است؟": "For example: How many diffusers are in stock?", "پاسخ بده": "Answer", "لطفاً سؤال را بنویسید.": "Please enter a question.", "در حال بررسی اطلاعات محلی…": "Checking local data…", "پاسخ‌گویی انجام نشد.": "Could not answer.",
   "شنیدن صدا لغو شد": "Voice listening cancelled", "✕ لغو شنیدن": "✕ Cancel listening", "از سای‌سای بپرس": "Ask SaySay", "سؤال خود را نزدیک میکروفون و به فارسی بگویید": "Speak your question close to the microphone in English", "صدایتان واضح تشخیص داده نشد. یک‌بار دیگر نزدیک میکروفون و در محیط آرام سؤال کنید.": "Your speech wasn't clear. Try again near the microphone in a quiet place.",
   "در حال شنیدن…": "Listening…", "🎙 ثبت فروش با صدا": "🎙 Record sale by voice", "🎙 ثبت کالای جدید با صدا": "🎙 Add product by voice", "نام مشتری": "Customer name", "ثبت کالای جدید با صدا": "Add new product by voice",
+  "اشتراک سای‌سای": "SaySay subscription",
+  "مغز سای‌سای": "SaySay intelligence",
+  "امروز چه کار کنم؟": "What should I do today?",
+  "کالاهای نیازمند تأمین": "Products needing restock",
 };
 
 export function translateRenderedUi(root: ParentNode = document): void {
